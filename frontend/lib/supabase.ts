@@ -5,11 +5,24 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export function getURL() {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin;
+  }
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    return `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+}
+
 export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${getURL()}/auth/callback`,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',
