@@ -5,10 +5,24 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { SKILL_OPTIONS, EXPERIENCE_OPTIONS } from '@/lib/mock';
-import { BriefcaseIcon, SearchIcon, XIcon, CheckIcon, PlusIcon, UserIcon, BuildingIcon } from '@/components/icons';
+import { BriefcaseIcon, SearchIcon, XIcon, UserIcon, BuildingIcon } from '@/components/icons';
 
-type Step = 'auth' | 'role' | 'entity' | 'profile';
+type Step = 'email' | 'password' | 'role' | 'entity' | 'profile';
+
+const SKILL_OPTIONS = [
+  'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Go', 'Rust',
+  'PostgreSQL', 'MongoDB', 'AWS', 'Docker', 'Kubernetes', 'GraphQL', 'REST APIs',
+  'React Native', 'Flutter', 'Swift', 'Kotlin', 'Java', 'C#', '.NET',
+  'Tailwind CSS', 'Figma', 'UI/UX Design', 'DevOps', 'CI/CD', 'Machine Learning',
+  'Data Analysis', 'Blockchain', 'Web3', 'Solidity', 'Three.js', 'Vue.js', 'Angular',
+  'PHP', 'Laravel', 'Ruby on Rails', 'Django', 'Flask', 'Spring Boot',
+];
+
+const EXPERIENCE_OPTIONS = [
+  { value: '0-1', label: 'Less than 1 year' },
+  { value: '1-3', label: '1-3 years' },
+  { value: '3+', label: '3+ years' },
+];
 
 const INDUSTRY_OPTIONS = [
   'Technology', 'Finance', 'Healthcare', 'Education', 'Marketing',
@@ -25,6 +39,18 @@ const BUDGET_RANGE_OPTIONS = [
   'Under $500', '$500 - $2,000', '$2,000 - $5,000', '$5,000 - $15,000', '$15,000 - $50,000', '$50,000+',
 ];
 
+function validateEmail(e: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+}
+
+function validatePassword(p: string): { valid: boolean; error: string } {
+  if (p.length < 8) return { valid: false, error: 'Password must be at least 8 characters' };
+  if (!/[A-Z]/.test(p)) return { valid: false, error: 'Password must contain an uppercase letter' };
+  if (!/[a-z]/.test(p)) return { valid: false, error: 'Password must contain a lowercase letter' };
+  if (!/[0-9]/.test(p)) return { valid: false, error: 'Password must contain a number' };
+  return { valid: true, error: '' };
+}
+
 export default function SignupPage() {
   return (
     <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" /></div>}>
@@ -40,7 +66,7 @@ function SignupContent() {
   const user = useBoard((s) => s.user);
 
   const isGoogleProvider = searchParams.get('provider') === 'google';
-  const initialStep = searchParams.get('step') === 'profile' ? 'role' : 'auth';
+  const initialStep = searchParams.get('step') === 'profile' ? 'role' : 'email';
 
   const [step, setStep] = useState<Step>(initialStep);
   const [loading, setLoading] = useState(false);
@@ -48,7 +74,10 @@ function SignupContent() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [role, setRole] = useState<'CLIENT' | 'FREELANCER'>('FREELANCER');
   const [entityType, setEntityType] = useState<'INDIVIDUAL' | 'COMPANY'>('INDIVIDUAL');
@@ -78,12 +107,32 @@ function SignupContent() {
     (s) => s.toLowerCase().includes(skillSearch.toLowerCase()) && !skills.includes(s)
   );
 
-  async function handleAuthSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  function handleEmailNext() {
     setError('');
+    setEmailError('');
+    if (!email) {
+      setEmailError('Email is required');
+      return;
+    }
+    if (!validateEmail(email)) {
+      setEmailError('Enter a valid email address');
+      return;
+    }
+    setStep('password');
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setPasswordError('');
+    const v = validatePassword(password);
+    if (!v.valid) {
+      setPasswordError(v.error);
+      return;
+    }
+    setLoading(true);
     try {
-      await api.signup({ name, email, password });
+      await api.signup({ name: name || email.split('@')[0], email, password });
       setStep('role');
     } catch {
       setError('Signup failed. Email may already be in use.');
@@ -151,13 +200,15 @@ function SignupContent() {
             <BriefcaseIcon className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-semibold text-txt-primary tracking-tight">
-            {step === 'auth' && 'Create your account'}
+            {step === 'email' && 'Create your account'}
+            {step === 'password' && 'Set a password'}
             {step === 'role' && 'How will you use Negotia?'}
             {step === 'entity' && (role === 'CLIENT' ? 'Tell us about your company' : 'How do you work?')}
             {step === 'profile' && 'Set up your profile'}
           </h1>
           <p className="mt-1 text-sm text-txt-secondary">
-            {step === 'auth' && 'Join Negotia and start negotiating'}
+            {step === 'email' && 'Join Negotia and start negotiating'}
+            {step === 'password' && 'Secure your account'}
             {step === 'role' && 'Choose your primary role on the platform'}
             {step === 'entity' && (role === 'CLIENT'
               ? 'Help us personalize your experience'
@@ -166,7 +217,7 @@ function SignupContent() {
           </p>
         </div>
 
-        {step === 'auth' && (
+        {step === 'email' && (
           <div className="card p-6 space-y-4">
             {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
 
@@ -186,25 +237,84 @@ function SignupContent() {
               <div className="relative flex justify-center text-xs"><span className="bg-surface px-2 text-txt-tertiary">or</span></div>
             </div>
 
-            <form onSubmit={handleAuthSubmit} className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="label">Full Name</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-                  className="input-field" placeholder="Your name" required />
+                <label className="label">Email address</label>
+                <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleEmailNext()}
+                  className={`input-field ${emailError ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''}`}
+                  placeholder="you@example.com" autoFocus />
+                {emailError && <p className="mt-1 text-xs text-danger-600">{emailError}</p>}
               </div>
-              <div>
-                <label className="label">Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  className="input-field" placeholder="you@example.com" required />
-              </div>
+              <button onClick={handleEmailNext} className="btn-primary w-full">Continue</button>
+            </div>
+          </div>
+        )}
+
+        {step === 'password' && (
+          <div className="card p-6 space-y-4">
+            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
+
+            <div className="rounded-lg bg-bg-subtle px-3.5 py-2.5 text-sm text-txt-secondary">
+              <span className="font-medium text-txt-primary">{email}</span>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-3">
               <div>
                 <label className="label">Password</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  className="input-field" placeholder="Min. 8 characters" required minLength={8} />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password} onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                    className={`input-field pr-10 ${passwordError ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''}`}
+                    placeholder="Min. 8 characters" autoFocus minLength={8} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-txt-tertiary hover:text-txt-secondary">
+                    {showPassword ? (
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {passwordError && <p className="mt-1 text-xs text-danger-600">{passwordError}</p>}
+                {password && !passwordError && validatePassword(password).valid && (
+                  <p className="mt-1 text-xs text-success-600">Strong password</p>
+                )}
               </div>
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? 'Creating account...' : 'Continue'}
-              </button>
+
+              <div className="space-y-1.5 pt-1">
+                <p className="text-xs text-txt-tertiary">Password must contain:</p>
+                <div className="grid grid-cols-2 gap-1">
+                  {[
+                    { label: '8+ characters', check: password.length >= 8 },
+                    { label: 'Uppercase letter', check: /[A-Z]/.test(password) },
+                    { label: 'Lowercase letter', check: /[a-z]/.test(password) },
+                    { label: 'A number', check: /[0-9]/.test(password) },
+                  ].map((rule) => (
+                    <div key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.check ? 'text-success-600' : 'text-txt-tertiary'}`}>
+                      {rule.check ? (
+                        <svg className="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      ) : (
+                        <svg className="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3" /></svg>
+                      )}
+                      {rule.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setStep('email')} className="btn-secondary flex-1">Back</button>
+                <button type="submit" disabled={loading} className="btn-primary flex-1">
+                  {loading ? 'Creating account...' : 'Continue'}
+                </button>
+              </div>
             </form>
           </div>
         )}
@@ -241,7 +351,7 @@ function SignupContent() {
 
             <div className="flex gap-3 pt-2">
               {!isGoogleProvider && (
-                <button onClick={() => setStep('auth')} className="btn-secondary flex-1">Back</button>
+                <button onClick={() => setStep('password')} className="btn-secondary flex-1">Back</button>
               )}
               <button onClick={() => setStep('entity')} className="btn-primary flex-1">Continue</button>
             </div>
@@ -425,7 +535,8 @@ function SignupContent() {
                       </div>
                     ))}
                     <button onClick={addPortfolioLink} className="btn-ghost text-xs text-accent-600">
-                      <PlusIcon className="h-3.5 w-3.5 mr-1" /> Add link
+                      <svg className="h-3.5 w-3.5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      Add link
                     </button>
                   </div>
                 </div>
@@ -443,7 +554,8 @@ function SignupContent() {
                       </div>
                     ))}
                     <button onClick={addPastWork} className="btn-ghost text-xs text-accent-600">
-                      <PlusIcon className="h-3.5 w-3.5 mr-1" /> Add project
+                      <svg className="h-3.5 w-3.5 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      Add project
                     </button>
                   </div>
                 </div>
@@ -468,7 +580,7 @@ function SignupContent() {
           </div>
         )}
 
-        {step === 'auth' && (
+        {step === 'email' && (
           <p className="mt-6 text-center text-sm text-txt-secondary">
             Already have an account?{' '}
             <Link href="/login" className="font-medium text-accent-600 hover:text-accent-700">Sign in</Link>
