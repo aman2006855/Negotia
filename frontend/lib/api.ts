@@ -48,16 +48,22 @@ export const api = {
   updateProfile: async (data: Partial<User>): Promise<Me> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const updateData: any = {
-      name: data.name, role: data.role, skills: data.skills,
-      capabilities: data.capabilities, experience: data.experience,
-      portfolio_links: data.portfolioLinks, past_work: data.pastWork,
-    };
+    const updateData: any = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.role !== undefined) updateData.role = data.role;
+    if (data.skills !== undefined) updateData.skills = data.skills;
+    if (data.capabilities !== undefined) updateData.capabilities = data.capabilities;
+    if (data.experience !== undefined) updateData.experience = data.experience;
+    if (data.portfolioLinks !== undefined) updateData.portfolio_links = data.portfolioLinks;
+    if (data.pastWork !== undefined) updateData.past_work = data.pastWork;
     if ((data as any).profileCompleted !== undefined) {
       updateData.profile_completed = (data as any).profileCompleted;
     }
-    const { error } = await supabase.from('users').update(updateData).eq('id', session.user.id);
-    if (error) throw error;
+    const { data: result, error } = await supabase.from('users').update(updateData).eq('id', session.user.id).select().maybeSingle();
+    if (error) {
+      console.error('updateProfile error:', error.message, error.details, error.hint);
+      throw error;
+    }
     return api.me();
   },
 

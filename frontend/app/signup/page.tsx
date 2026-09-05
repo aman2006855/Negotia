@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { BriefcaseIcon, SearchIcon, XIcon, UserIcon, BuildingIcon } from '@/components/icons';
+import { CustomSelect } from '@/components/CustomSelect';
 
 const VALID_STEPS = ['email', 'password', 'role', 'entity', 'profile'] as const;
 type Step = (typeof VALID_STEPS)[number];
 const STEP_INDEX: Record<Step, number> = { email: 0, password: 1, role: 2, entity: 3, profile: 4 };
-const TOTAL_STEPS = 5;
 
 const SKILL_OPTIONS = [
   'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Go', 'Rust',
@@ -27,19 +27,51 @@ const EXPERIENCE_OPTIONS = [
   { value: '3+', label: '3+ years' },
 ];
 
+const WORK_STYLE_OPTIONS = [
+  { value: 'full-time', label: 'Full-time freelance' },
+  { value: 'part-time', label: 'Part-time / Side projects' },
+  { value: 'contract', label: 'Long-term contracts' },
+  { value: 'project', label: 'Project-based' },
+];
+
 const INDUSTRY_OPTIONS = [
-  'Technology', 'Finance', 'Healthcare', 'Education', 'Marketing',
-  'E-commerce', 'Real Estate', 'Entertainment', 'Manufacturing', 'Consulting',
-  'Legal', 'Non-profit', 'Gaming', 'Media', 'Travel', 'Food & Beverage',
-  'Automotive', 'Aerospace', 'Telecommunications', 'Energy',
+  { value: 'Technology', label: 'Technology' },
+  { value: 'Finance', label: 'Finance' },
+  { value: 'Healthcare', label: 'Healthcare' },
+  { value: 'Education', label: 'Education' },
+  { value: 'Marketing', label: 'Marketing' },
+  { value: 'E-commerce', label: 'E-commerce' },
+  { value: 'Real Estate', label: 'Real Estate' },
+  { value: 'Entertainment', label: 'Entertainment' },
+  { value: 'Manufacturing', label: 'Manufacturing' },
+  { value: 'Consulting', label: 'Consulting' },
+  { value: 'Legal', label: 'Legal' },
+  { value: 'Non-profit', label: 'Non-profit' },
+  { value: 'Gaming', label: 'Gaming' },
+  { value: 'Media', label: 'Media' },
+  { value: 'Travel', label: 'Travel' },
+  { value: 'Food & Beverage', label: 'Food & Beverage' },
+  { value: 'Automotive', label: 'Automotive' },
+  { value: 'Aerospace', label: 'Aerospace' },
+  { value: 'Telecommunications', label: 'Telecommunications' },
+  { value: 'Energy', label: 'Energy' },
 ];
 
 const COMPANY_SIZE_OPTIONS = [
-  'Solo (1 person)', 'Small (2-10)', 'Medium (11-50)', 'Large (51-200)', 'Enterprise (200+)',
+  { value: 'Solo (1 person)', label: 'Solo (1 person)' },
+  { value: 'Small (2-10)', label: 'Small (2-10)' },
+  { value: 'Medium (11-50)', label: 'Medium (11-50)' },
+  { value: 'Large (51-200)', label: 'Large (51-200)' },
+  { value: 'Enterprise (200+)', label: 'Enterprise (200+)' },
 ];
 
 const BUDGET_RANGE_OPTIONS = [
-  'Under $500', '$500 - $2,000', '$2,000 - $5,000', '$5,000 - $15,000', '$15,000 - $50,000', '$50,000+',
+  { value: 'Under $500', label: 'Under $500' },
+  { value: '$500 - $2,000', label: '$500 - $2,000' },
+  { value: '$2,000 - $5,000', label: '$2,000 - $5,000' },
+  { value: '$5,000 - $15,000', label: '$5,000 - $15,000' },
+  { value: '$15,000 - $50,000', label: '$15,000 - $50,000' },
+  { value: '$50,000+', label: '$50,000+' },
 ];
 
 function validateEmail(e: string): boolean {
@@ -63,10 +95,10 @@ function StepProgress({ current }: { current: Step }) {
   const idx = STEP_INDEX[current];
   return (
     <div className="flex items-center gap-1.5 w-full mb-8">
-      {VALID_STEPS.map((s, i) => (
-        <div key={s} className="flex-1 flex items-center">
-          <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-            i < idx ? 'bg-accent-600' : i === idx ? 'bg-accent-600' : 'bg-border-subtle'
+      {VALID_STEPS.map((_, i) => (
+        <div key={i} className="flex-1">
+          <div className={`h-1.5 rounded-full transition-all duration-300 ${
+            i <= idx ? 'bg-accent-600' : 'bg-border-subtle'
           }`} />
         </div>
       ))}
@@ -86,13 +118,9 @@ function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useBoard((s) => s.setUser);
-  const user = useBoard((s) => s.user);
 
   const step = getStep(searchParams.get('step'));
-
-  function go(s: Step) {
-    router.push(`/signup?step=${s}`);
-  }
+  function go(s: Step) { router.push(`/signup?step=${s}`); }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -111,12 +139,13 @@ function SignupContent() {
   const [industry, setIndustry] = useState('');
   const [companySize, setCompanySize] = useState('');
   const [budgetRange, setBudgetRange] = useState('');
+  const [workStyle, setWorkStyle] = useState('');
 
   const [skills, setSkills] = useState<string[]>([]);
   const [capabilities, setCapabilities] = useState('');
   const [experience, setExperience] = useState('');
   const [portfolioLinks, setPortfolioLinks] = useState<{ label: string; url: string }[]>([]);
-  const [pastWork, setPastWork] = useState<{ title: string; description: string }[]>([]);
+  const [pastWork, setPastWork] = useState<{ title: string; url: string }[]>([]);
   const [skillSearch, setSkillSearch] = useState('');
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
 
@@ -152,25 +181,28 @@ function SignupContent() {
   async function handleGoogleSignup() {
     setLoading(true);
     setError('');
-    try {
-      await api.googleLogin();
-    } catch {
-      setError('Google sign-up failed');
-      setLoading(false);
-    }
+    try { await api.googleLogin(); } catch { setError('Google sign-up failed'); setLoading(false); }
   }
 
   async function handleProfileSubmit() {
     setLoading(true);
+    setError('');
     try {
       const { user: updatedUser } = await api.updateProfile({
-        role, skills, capabilities, experience: experience as any,
-        portfolioLinks, pastWork, profileCompleted: true,
+        name: name || email.split('@')[0] || 'User',
+        role,
+        skills,
+        capabilities,
+        experience: experience || undefined,
+        portfolioLinks,
+        pastWork,
+        profileCompleted: true,
       } as any);
       if (updatedUser) setUser(updatedUser);
       router.push('/jobs');
-    } catch {
-      setError('Profile setup failed');
+    } catch (err: any) {
+      console.error('Profile setup failed:', err);
+      setError(err?.message || 'Profile setup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -187,23 +219,20 @@ function SignupContent() {
     const u = [...portfolioLinks]; u[i] = { ...u[i], [field]: v }; setPortfolioLinks(u);
   }
   function removePortfolioLink(i: number) { setPortfolioLinks(portfolioLinks.filter((_, j) => j !== i)); }
-  function addPastWork() { setPastWork([...pastWork, { title: '', description: '' }]); }
-  function updatePastWork(i: number, field: 'title' | 'description', v: string) {
+  function addPastWork() { setPastWork([...pastWork, { title: '', url: '' }]); }
+  function updatePastWork(i: number, field: 'title' | 'url', v: string) {
     const u = [...pastWork]; u[i] = { ...u[i], [field]: v }; setPastWork(u);
   }
   function removePastWork(i: number) { setPastWork(pastWork.filter((_, j) => j !== i)); }
 
   const titles: Record<Step, string> = {
-    email: 'Create your account',
-    password: 'Set a password',
+    email: 'Create your account', password: 'Set a password',
     role: 'How will you use Negotia?',
     entity: role === 'CLIENT' ? 'Tell us about your company' : 'How do you work?',
     profile: 'Set up your profile',
   };
-
   const subtitles: Record<Step, string> = {
-    email: 'Join Negotia and start negotiating',
-    password: 'Secure your account',
+    email: 'Join Negotia and start negotiating', password: 'Secure your account',
     role: 'Choose your primary role on the platform',
     entity: role === 'CLIENT' ? 'Help us personalize your experience' : 'Help clients understand your work style',
     profile: 'Tell us about yourself so we can match you better',
@@ -212,23 +241,19 @@ function SignupContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-4 py-10 sm:py-16">
       <div className="w-full max-w-md mx-auto">
-        {/* Logo */}
         <div className="flex justify-center mb-6">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-600 text-white shadow-medium">
             <BriefcaseIcon className="h-7 w-7" />
           </div>
         </div>
 
-        {/* Header */}
         <div className="text-center mb-2">
           <h1 className="text-2xl font-bold tracking-tight text-txt-primary">{titles[step]}</h1>
           <p className="mt-2 text-sm text-txt-secondary">{subtitles[step]}</p>
         </div>
 
-        {/* Progress */}
         <StepProgress current={step} />
 
-        {/* Error */}
         {error && (
           <div className="mb-5 flex items-center gap-2 rounded-xl bg-danger-50 border border-danger-500/20 px-4 py-3 text-sm text-danger-600">
             <svg className="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
@@ -264,9 +289,7 @@ function SignupContent() {
                   placeholder="you@example.com" autoFocus />
                 {emailError && <p className="mt-1.5 text-xs text-danger-600">{emailError}</p>}
               </div>
-              <button onClick={handleEmailNext} className="btn-primary w-full py-3 text-sm font-semibold">
-                Continue
-              </button>
+              <button onClick={handleEmailNext} className="btn-primary w-full py-3 text-sm font-semibold">Continue</button>
             </div>
           </div>
         )}
@@ -285,22 +308,16 @@ function SignupContent() {
               <div>
                 <label className="label">Password</label>
                 <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password} onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
+                  <input type={showPassword ? 'text' : 'password'} value={password}
+                    onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
                     className={`input-field py-3 pr-11 ${passwordError ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''}`}
                     placeholder="Min. 8 characters" autoFocus minLength={8} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-txt-tertiary hover:text-txt-secondary hover:bg-inset transition-colors">
                     {showPassword ? (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
                     ) : (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                     )}
                   </button>
                 </div>
@@ -344,26 +361,24 @@ function SignupContent() {
         {/* ─── Step 3: Role ─── */}
         {step === 'role' && (
           <div className="card p-6 sm:p-8 space-y-6">
-            <div>
-              <label className="label text-base font-semibold mb-3">I am a</label>
-              <div className="grid grid-cols-2 gap-4">
-                <button type="button" onClick={() => { setRole('FREELANCER'); go('entity'); }}
-                  className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors duration-200 mb-3">
-                    <UserIcon className="h-7 w-7" />
-                  </div>
-                  <div className="text-sm font-semibold text-txt-primary">Freelancer</div>
-                  <div className="mt-1 text-xs text-txt-tertiary">Find work & get hired</div>
-                </button>
-                <button type="button" onClick={() => { setRole('CLIENT'); go('entity'); }}
-                  className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors duration-200 mb-3">
-                    <BuildingIcon className="h-7 w-7" />
-                  </div>
-                  <div className="text-sm font-semibold text-txt-primary">Client</div>
-                  <div className="mt-1 text-xs text-txt-tertiary">Post jobs & hire</div>
-                </button>
-              </div>
+            <label className="label text-base font-semibold">I am a</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button type="button" onClick={() => { setRole('FREELANCER'); go('entity'); }}
+                className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors duration-200 mb-3">
+                  <UserIcon className="h-7 w-7" />
+                </div>
+                <div className="text-sm font-semibold text-txt-primary">Freelancer</div>
+                <div className="mt-1 text-xs text-txt-tertiary">Find work & get hired</div>
+              </button>
+              <button type="button" onClick={() => { setRole('CLIENT'); go('entity'); }}
+                className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors duration-200 mb-3">
+                  <BuildingIcon className="h-7 w-7" />
+                </div>
+                <div className="text-sm font-semibold text-txt-primary">Client</div>
+                <div className="mt-1 text-xs text-txt-tertiary">Post jobs & hire</div>
+              </button>
             </div>
           </div>
         )}
@@ -371,87 +386,50 @@ function SignupContent() {
         {/* ─── Step 4: Entity ─── */}
         {step === 'entity' && (
           <div className="card p-6 sm:p-8 space-y-6">
-            <div>
-              <label className="label text-base font-semibold mb-3">I am a</label>
-              <div className="grid grid-cols-2 gap-4">
-                <button type="button" onClick={() => setEntityType('INDIVIDUAL')}
-                  className={`group flex flex-col items-center justify-center rounded-2xl border-2 p-5 text-center transition-all duration-200 cursor-pointer ${
-                    entityType === 'INDIVIDUAL'
-                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft'
-                      : 'border-border-subtle bg-surface hover:border-accent-400 hover:bg-accent-50/50'
-                  }`}>
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-colors duration-200 ${
-                    entityType === 'INDIVIDUAL'
-                      ? 'bg-accent-100 text-accent-600'
-                      : 'bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600'
-                  }`}>
-                    <UserIcon className="h-6 w-6" />
-                  </div>
-                  <div className="text-sm font-semibold text-txt-primary">Individual</div>
-                  <div className="mt-0.5 text-xs text-txt-tertiary">Working solo</div>
-                </button>
-                <button type="button" onClick={() => setEntityType('COMPANY')}
-                  className={`group flex flex-col items-center justify-center rounded-2xl border-2 p-5 text-center transition-all duration-200 cursor-pointer ${
-                    entityType === 'COMPANY'
-                      ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft'
-                      : 'border-border-subtle bg-surface hover:border-accent-400 hover:bg-accent-50/50'
-                  }`}>
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-colors duration-200 ${
-                    entityType === 'COMPANY'
-                      ? 'bg-accent-100 text-accent-600'
-                      : 'bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600'
-                  }`}>
-                    <BuildingIcon className="h-6 w-6" />
-                  </div>
-                  <div className="text-sm font-semibold text-txt-primary">Company</div>
-                  <div className="mt-0.5 text-xs text-txt-tertiary">Team or business</div>
-                </button>
-              </div>
+            <label className="label text-base font-semibold">I am a</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button type="button" onClick={() => setEntityType('INDIVIDUAL')}
+                className={`group flex flex-col items-center justify-center rounded-2xl border-2 p-5 text-center transition-all duration-200 cursor-pointer ${
+                  entityType === 'INDIVIDUAL' ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft' : 'border-border-subtle bg-surface hover:border-accent-400 hover:bg-accent-50/50'
+                }`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-colors ${
+                  entityType === 'INDIVIDUAL' ? 'bg-accent-100 text-accent-600' : 'bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600'
+                }`}>
+                  <UserIcon className="h-6 w-6" />
+                </div>
+                <div className="text-sm font-semibold text-txt-primary">Individual</div>
+                <div className="mt-0.5 text-xs text-txt-tertiary">Working solo</div>
+              </button>
+              <button type="button" onClick={() => setEntityType('COMPANY')}
+                className={`group flex flex-col items-center justify-center rounded-2xl border-2 p-5 text-center transition-all duration-200 cursor-pointer ${
+                  entityType === 'COMPANY' ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft' : 'border-border-subtle bg-surface hover:border-accent-400 hover:bg-accent-50/50'
+                }`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-colors ${
+                  entityType === 'COMPANY' ? 'bg-accent-100 text-accent-600' : 'bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600'
+                }`}>
+                  <BuildingIcon className="h-6 w-6" />
+                </div>
+                <div className="text-sm font-semibold text-txt-primary">Company</div>
+                <div className="mt-0.5 text-xs text-txt-tertiary">Team or business</div>
+              </button>
             </div>
 
             {entityType === 'COMPANY' && (
               <div className="space-y-4 animate-fade-in">
                 <div>
                   <label className="label">Company Name</label>
-                  <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-                    className="input-field py-3" placeholder="Acme Inc." />
+                  <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="input-field py-3" placeholder="Acme Inc." />
                 </div>
-                <div>
-                  <label className="label">Industry</label>
-                  <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="input-field py-3">
-                    <option value="">Select industry</option>
-                    {INDUSTRY_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Company Size</label>
-                  <select value={companySize} onChange={(e) => setCompanySize(e.target.value)} className="input-field py-3">
-                    <option value="">Select size</option>
-                    {COMPANY_SIZE_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                </div>
-                {role === 'CLIENT' && (
-                  <div>
-                    <label className="label">Typical Project Budget</label>
-                    <select value={budgetRange} onChange={(e) => setBudgetRange(e.target.value)} className="input-field py-3">
-                      <option value="">Select budget range</option>
-                      {BUDGET_RANGE_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
-                  </div>
-                )}
+                <CustomSelect value={industry} onChange={setIndustry} options={INDUSTRY_OPTIONS} placeholder="Select industry" />
+                <CustomSelect value={companySize} onChange={setCompanySize} options={COMPANY_SIZE_OPTIONS} placeholder="Select size" />
+                {role === 'CLIENT' && <CustomSelect value={budgetRange} onChange={setBudgetRange} options={BUDGET_RANGE_OPTIONS} placeholder="Select budget range" />}
               </div>
             )}
 
             {role === 'FREELANCER' && entityType === 'INDIVIDUAL' && (
               <div className="animate-fade-in">
                 <label className="label">Preferred work style</label>
-                <select value={experience} onChange={(e) => setExperience(e.target.value)} className="input-field py-3">
-                  <option value="">Select</option>
-                  <option value="full-time">Full-time freelance</option>
-                  <option value="part-time">Part-time / Side projects</option>
-                  <option value="contract">Long-term contracts</option>
-                  <option value="project">Project-based</option>
-                </select>
+                <CustomSelect value={workStyle} onChange={setWorkStyle} options={WORK_STYLE_OPTIONS} placeholder="Select work style" />
               </div>
             )}
 
@@ -466,11 +444,11 @@ function SignupContent() {
         {step === 'profile' && (
           <div className="card p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-2 rounded-xl bg-accent-50/80 border border-accent-200/60 px-4 py-2.5">
-              <span className="inline-flex items-center rounded-full bg-accent-600 px-2 py-0.5 text-xs font-medium text-white">
+              <span className="inline-flex items-center rounded-full bg-accent-600 px-2.5 py-0.5 text-xs font-medium text-white">
                 {role === 'CLIENT' ? 'Client' : 'Freelancer'}
               </span>
               <span className="text-txt-tertiary">&middot;</span>
-              <span className="inline-flex items-center rounded-full bg-inset px-2 py-0.5 text-xs font-medium text-txt-secondary">
+              <span className="inline-flex items-center rounded-full bg-inset px-2.5 py-0.5 text-xs font-medium text-txt-secondary">
                 {entityType === 'COMPANY' ? 'Company' : 'Individual'}
               </span>
               {entityType === 'COMPANY' && companyName && (
@@ -488,10 +466,8 @@ function SignupContent() {
                   <div className="relative">
                     <div className="flex items-center gap-2.5 rounded-xl border border-border-subtle bg-surface px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-accent-500/30 focus-within:border-accent-500 transition-all">
                       <SearchIcon className="h-4 w-4 text-txt-tertiary shrink-0" />
-                      <input type="text" value={skillSearch}
-                        onChange={(e) => { setSkillSearch(e.target.value); setShowSkillDropdown(true); }}
-                        onFocus={() => setShowSkillDropdown(true)}
-                        placeholder="Search skills..."
+                      <input type="text" value={skillSearch} onChange={(e) => { setSkillSearch(e.target.value); setShowSkillDropdown(true); }}
+                        onFocus={() => setShowSkillDropdown(true)} placeholder="Search skills..."
                         className="flex-1 bg-transparent text-sm outline-none placeholder:text-txt-tertiary" />
                     </div>
                     {showSkillDropdown && filteredSkills.length > 0 && (
@@ -520,16 +496,12 @@ function SignupContent() {
                 <div>
                   <label className="label">Capabilities</label>
                   <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)}
-                    className="input-field resize-none py-3" rows={3}
-                    placeholder="What can you build? (e.g., Full-stack web apps, mobile UIs, APIs...)" />
+                    className="input-field resize-none py-3" rows={3} placeholder="What can you build? (e.g., Full-stack web apps, mobile UIs, APIs...)" />
                 </div>
 
                 <div>
                   <label className="label">Experience</label>
-                  <select value={experience} onChange={(e) => setExperience(e.target.value)} className="input-field py-3">
-                    <option value="">Select experience level</option>
-                    {EXPERIENCE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
+                  <CustomSelect value={experience} onChange={setExperience} options={EXPERIENCE_OPTIONS} placeholder="Select experience level" />
                 </div>
 
                 <div>
@@ -555,14 +527,19 @@ function SignupContent() {
 
                 <div>
                   <label className="label">Past Work</label>
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {pastWork.map((work, i) => (
-                      <div key={i} className="flex items-center gap-2">
+                      <div key={i} className="rounded-xl border border-border-subtle bg-surface p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-txt-tertiary">Project {i + 1}</span>
+                          <button onClick={() => removePastWork(i)} className="p-1 rounded-md text-txt-tertiary hover:text-danger-500 hover:bg-danger-50 transition-colors">
+                            <XIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                         <input type="text" value={work.title} onChange={(e) => updatePastWork(i, 'title', e.target.value)}
-                          className="input-field flex-1 py-2.5" placeholder="Project title" />
-                        <button onClick={() => removePastWork(i)} className="shrink-0 p-2 rounded-lg text-txt-tertiary hover:text-danger-500 hover:bg-danger-50 transition-colors">
-                          <XIcon className="h-4 w-4" />
-                        </button>
+                          className="input-field w-full py-2.5 text-sm" placeholder="Project title" />
+                        <input type="url" value={work.url} onChange={(e) => updatePastWork(i, 'url', e.target.value)}
+                          className="input-field w-full py-2.5 text-sm" placeholder="Project URL (optional)" />
                       </div>
                     ))}
                     <button onClick={addPastWork} className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-600 hover:text-accent-700 transition-colors">
@@ -578,8 +555,7 @@ function SignupContent() {
               <div className="animate-fade-in">
                 <label className="label">What are you looking for?</label>
                 <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)}
-                  className="input-field resize-none py-3" rows={3}
-                  placeholder="Tell freelancers what kind of work you typically need..." />
+                  className="input-field resize-none py-3" rows={3} placeholder="Tell freelancers what kind of work you typically need..." />
               </div>
             )}
 
@@ -592,7 +568,6 @@ function SignupContent() {
           </div>
         )}
 
-        {/* Footer link */}
         {step === 'email' && (
           <p className="mt-8 text-center text-sm text-txt-secondary">
             Already have an account?{' '}
