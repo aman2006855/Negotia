@@ -63,5 +63,4 @@ select cron.schedule(
   $$select release_expired_locks()$$
 );
 
--- 5. Add negotiations to realtime publication (for accept/decline live events)
-alter publication supabase_realtime add table negotiations;
+-- Note: negotiations already added to supabase_realtime in part4
