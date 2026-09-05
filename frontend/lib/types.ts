@@ -22,6 +22,7 @@ export interface User {
   rating: number;
   reviewCount: number;
   createdAt: string;
+  profileCompleted?: boolean;
 }
 
 export interface FeedJob {

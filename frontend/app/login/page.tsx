@@ -22,7 +22,15 @@ export default function LoginPage() {
     try {
       const me = await api.login(email, password);
       setUser(me.user);
-      router.push('/jobs');
+      if (!me.user) {
+        setError('Login failed');
+        return;
+      }
+      if (!me.user.profileCompleted) {
+        router.push('/signup?step=role');
+      } else {
+        router.push('/jobs');
+      }
     } catch {
       setError('Invalid email or password');
     } finally {
@@ -34,15 +42,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const result: any = await api.googleLogin();
-      if (result?.user) {
-        setUser(result.user);
-        if (result.needsProfileSetup) {
-          router.push('/signup?step=profile&provider=google');
-        } else {
-          router.push('/jobs');
-        }
-      }
+      await api.googleLogin();
     } catch {
       setError('Google sign-in failed');
     } finally {
@@ -60,7 +60,15 @@ export default function LoginPage() {
       };
       const me = await api.login(emailMap[role], 'password123');
       setUser(me.user);
-      router.push('/jobs');
+      if (!me.user) {
+        setError('Login failed');
+        return;
+      }
+      if (!me.user.profileCompleted) {
+        router.push('/signup?step=role');
+      } else {
+        router.push('/jobs');
+      }
     } catch {
       setError('Login failed');
     } finally {

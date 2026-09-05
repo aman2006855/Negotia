@@ -21,7 +21,8 @@ function mapUser(u: any): User {
     completedJobs: u.completed_jobs ?? 0, activeJobs: u.active_jobs ?? 0,
     rating: Number(u.rating) || 0, reviewCount: u.review_count ?? 0,
     createdAt: u.created_at,
-  };
+    profileCompleted: u.profile_completed ?? false,
+  } as User;
 }
 
 function mapFeedJob(j: any): FeedJob {
@@ -64,11 +65,15 @@ export const api = {
     if (USE_MOCK) return mockApi.updateProfile(data);
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const { error } = await supabase.from('users').update({
+    const updateData: any = {
       name: data.name, role: data.role, skills: data.skills,
       capabilities: data.capabilities, experience: data.experience,
       portfolio_links: data.portfolioLinks, past_work: data.pastWork,
-    }).eq('id', session.user.id);
+    };
+    if ((data as any).profileCompleted !== undefined) {
+      updateData.profile_completed = (data as any).profileCompleted;
+    }
+    const { error } = await supabase.from('users').update(updateData).eq('id', session.user.id);
     if (error) throw error;
     return api.me();
   },

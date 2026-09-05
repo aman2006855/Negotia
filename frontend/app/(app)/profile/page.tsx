@@ -10,6 +10,7 @@ import type { Review } from '@/lib/types';
 export default function ProfilePage() {
   const router = useRouter();
   const user = useBoard((s) => s.user);
+  const setUser = useBoard((s) => s.setUser);
   const reviews = useBoard((s) => s.reviews);
   const setReviews = useBoard((s) => s.setReviews);
   const theme = useBoard((s) => s.theme);
@@ -20,13 +21,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     (async () => {
+      if (!user) {
+        try {
+          const me = await api.me();
+          if (me.user) setUser(me.user);
+        } catch {}
+      }
       try {
         const r = await api.getReviews(user?.id);
         setReviews(r);
       } catch {}
       setLoading(false);
     })();
-  }, [setReviews, user?.id]);
+  }, [setReviews, setUser, user]);
 
   function handleShare() {
     const url = `${window.location.origin}/profile/${user?.id}`;

@@ -115,8 +115,8 @@ function SignupContent() {
     try {
       const { user: updatedUser } = await api.updateProfile({
         role, skills, capabilities, experience: experience as any,
-        portfolioLinks, pastWork,
-      });
+        portfolioLinks, pastWork, profileCompleted: true,
+      } as any);
       if (updatedUser) setUser(updatedUser);
       router.push('/jobs');
     } catch {
