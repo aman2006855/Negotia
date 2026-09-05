@@ -185,4 +185,13 @@ export const api = {
     });
     return res.json();
   },
+
+  getPublicClientProfile: async (clientId: string) => {
+    if (USE_MOCK) return mockApi.getPublicClientProfile(clientId);
+    const res = await fetch(`${API_URL}/api/clients/${clientId}/public`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (!res.ok) throw new Error('Client not found');
+    return res.json();
+  },
 };

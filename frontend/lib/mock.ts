@@ -8,7 +8,7 @@ const MOCK_USERS: Record<string, User> = {
   c1: {
     id: 'c1', name: 'Ava Chen', email: 'client@demo.dev', role: 'CLIENT',
     skills: [], portfolioLinks: [], pastWork: [],
-    totalEarningsCents: 0, completedJobs: 0, activeJobs: 2, rating: 0, reviewCount: 0,
+    totalEarningsCents: 0, completedJobs: 6, activeJobs: 2, rating: 4.9, reviewCount: 4,
     createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
   },
   f1: {
@@ -233,6 +233,7 @@ export const mockApi = {
         budgetCents: 540000,
         agreementText: 'Payment on delivery. 2 revision rounds included. NDA required before project start. Timeline: 14 calendar days from kickoff. All source files transferred upon final payment. Late delivery penalty: 5% per day after deadline. Code reviews required at each phase boundary. 10% holdback until UAT sign-off.',
         clientName: 'Ava Chen',
+        clientId: 'c1',
       },
       messages: MOCK_MESSAGES,
     };
@@ -386,5 +387,44 @@ export const mockApi = {
     const user = MOCK_USERS[userId];
     if (!user) throw new Error('User not found');
     return { user };
+  },
+
+  getClientJobs: async (clientId: string) => {
+    await new Promise((r) => setTimeout(r, 150));
+    const jobs = MOCK_JOBS.filter((j) => j.clientId === clientId && (j.status === 'OPEN' || j.status === 'NEGOTIATING'));
+    return { jobs };
+  },
+
+  getClientCompletedProjects: async (clientId: string) => {
+    await new Promise((r) => setTimeout(r, 150));
+    const projects = MOCK_PROJECTS.filter((p) => p.clientId === clientId && (p.status === 'COMPLETED' || p.progress === 100));
+    const completedFromJobs = MOCK_JOBS.filter((j) => j.clientId === clientId && j.status === 'COMPLETED').map((j) => ({
+      id: 'cp-' + j.id, title: j.title, description: j.description, budgetCents: j.budgetCents,
+      freelancerName: j.freelancerName ?? 'Unknown', completedAt: j.createdAt,
+    }));
+    return { projects, completedFromJobs };
+  },
+
+  getClientReviews: async (clientId: string) => {
+    await new Promise((r) => setTimeout(r, 150));
+    const client = MOCK_USERS[clientId];
+    const reviews = MOCK_REVIEWS.filter((r) => client && r.clientName === client.name);
+    return { reviews };
+  },
+
+  getPublicClientProfile: async (clientId: string) => {
+    await new Promise((r) => setTimeout(r, 200));
+    const user = MOCK_USERS[clientId];
+    if (!user) throw new Error('Client not found');
+    const openJobs = MOCK_JOBS.filter((j) => j.clientId === clientId && (j.status === 'OPEN' || j.status === 'NEGOTIATING'));
+    const completedJobs = MOCK_JOBS.filter((j) => j.clientId === clientId && j.status === 'COMPLETED');
+    const reviews = MOCK_REVIEWS.filter((r) => r.clientName === user.name);
+    const totalSpentCents = MOCK_JOBS.filter((j) => j.clientId === clientId && j.status === 'COMPLETED').reduce((sum, j) => sum + j.budgetCents, 0);
+    return {
+      user: { ...user, totalEarningsCents: totalSpentCents },
+      openJobs,
+      completedJobs,
+      reviews,
+    };
   },
 };

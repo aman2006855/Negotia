@@ -5,7 +5,6 @@ import { useBoard } from '@/lib/store';
 
 export function TopBanner() {
   const myActiveJobId = useBoard((s) => s.myActiveJobId);
-  const myNegotiationId = useBoard((s) => s.myNegotiationId);
   const jobs = useBoard((s) => s.jobs);
 
   if (!myActiveJobId) return null;
@@ -20,14 +19,12 @@ export function TopBanner() {
           1 Project in Negotiation
           {job && <span className="text-txt-secondary font-normal hidden sm:inline">— {job.title}</span>}
         </div>
-        {myNegotiationId && (
-          <Link
-            href="/negotiation"
-            className="rounded-md bg-success-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-success-600/90"
-          >
-            Return
-          </Link>
-        )}
+        <Link
+          href="/negotiation"
+          className="rounded-md bg-success-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-success-600/90"
+        >
+          Return
+        </Link>
       </div>
     </div>
   );

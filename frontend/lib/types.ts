@@ -58,6 +58,7 @@ export interface NegotiationState {
     budgetCents: number;
     agreementText: string;
     clientName: string;
+    clientId: string;
   };
   messages: ChatMessage[];
 }
