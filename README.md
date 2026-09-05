@@ -49,12 +49,13 @@ CLIENT                          FREELANCER
 |---|---|---|
 | Frontend | **Next.js 14** (App Router) + **React 18** + **Tailwind CSS** | SSR, file-based routing, clean utility styling |
 | State | **Zustand** | Lightweight global lock (`isNegotiating`, `activeJobId`) |
-| Backend | **Node.js** + **Express** | Lightweight API + WebSocket server |
-| Realtime | **Socket.IO** (WebSockets) | Bidirectional events, rooms, auto-reconnect |
-| Database | **PostgreSQL** + **Prisma ORM** | ACID transactions for race-free locking |
-| Auth | **JWT** (Bearer / `auth.token`) | Stateless, works for REST + Socket.IO |
+| Database | **Supabase** (PostgreSQL + Realtime + Auth + RPC) | All-in-one: DB, realtime, auth, serverless functions |
+| Realtime | **Supabase Realtime** (built-in WebSockets) | No extra server needed; live chat, job updates, TTL |
+| Auth | **Supabase Auth** (email + Google OAuth) | Managed auth with RLS integration |
+| Locking | **PostgreSQL RPCs** (security definer) | `lock_job()`, `decline_negotiation()`, `accept_negotiation()` |
+| TTL | **pg_cron** (every minute) | `release_expired_locks()` frees 15-min abandoned negotiations |
 
-**Alternative backends:** Supabase (Postgres + Realtime) can partially replace Express + Socket.IO. Firebase uses Firestore (different paradigm). Both require schema adaptation.
+> **Architecture note:** The Express + Socket.IO backend (`backend/` folder) was the original reference implementation but is **no longer deployed**. All realtime and locking logic now runs inside Supabase (RPCs + pg_cron). The `backend/` folder is kept in the repo for reference only.
 
 ---
 
@@ -74,18 +75,23 @@ CLIENT                          FREELANCER
 
 ## 5. Quick Start
 
+### Option A: Mock Mode (no backend required)
 ```bash
-# Backend
-cd backend && npm install
-cp .env.example .env          # set DATABASE_URL, JWT_SECRET
-npx prisma migrate dev
-npx prisma db seed
-npm run dev                   # → http://localhost:4000
-
-# Frontend
 cd frontend && npm install
-cp .env.example .env          # set NEXT_PUBLIC_API_URL
 npm run dev                   # → http://localhost:3000
+# USE_MOCK = true in lib/api.ts (default)
+# Demo accounts work out of the box
+```
+
+### Option B: Supabase (production)
+```bash
+# 1. Create Supabase project at supabase.com
+# 2. SQL Editor: run supabase/schema.sql → then supabase/schema_v2.sql → then supabase/seed.sql
+# 3. Copy Project URL + anon key → add to Vercel env vars:
+#    NEXT_PUBLIC_SUPABASE_URL=...
+#    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+# 4. Set USE_MOCK = false in lib/api.ts (or NEXT_PUBLIC_USE_MOCK=0)
+# 5. Deploy to Vercel (push to main)
 ```
 
 Full instructions → [`SETUP.md`](SETUP.md)
