@@ -145,16 +145,9 @@ function SignupContent() {
     setLoading(true);
     setError('');
     try {
-      const result: any = await api.googleLogin();
-      if (result?.user) {
-        setUser(result.user);
-        setName(result.user.name);
-        setEmail(result.user.email);
-        setStep('role');
-      }
+      await api.googleLogin();
     } catch {
       setError('Google sign-up failed');
-    } finally {
       setLoading(false);
     }
   }

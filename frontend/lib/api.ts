@@ -74,7 +74,20 @@ export const api = {
   me: async (): Promise<Me> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const { data, error } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+    let { data, error } = await supabase.from('users').select('*').eq('id', session.user.id).maybeSingle();
+    if (!data) {
+      const meta = session.user.user_metadata ?? {};
+      const name = meta.name ?? meta.full_name ?? meta.avatar_url?.split('/').pop() ?? session.user.email?.split('@')[0] ?? 'User';
+      const avatar = meta.avatar_url ?? meta.picture ?? null;
+      const { error: insErr } = await supabase.from('users').upsert({
+        id: session.user.id, email: session.user.email ?? '', name, avatar_url: avatar,
+        role: 'FREELANCER', skills: [], portfolio_links: [], past_work: [],
+        total_earnings_cents: 0, completed_jobs: 0, active_jobs: 0,
+        rating: 0, review_count: 0, profile_completed: false,
+      }, { onConflict: 'id' });
+      if (insErr) throw insErr;
+      ({ data, error } = await supabase.from('users').select('*').eq('id', session.user.id).maybeSingle());
+    }
     if (error) throw error;
     const user = mapUser(data);
     const { data: neg } = await supabase
