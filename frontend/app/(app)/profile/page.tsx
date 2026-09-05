@@ -21,7 +21,7 @@ export default function ProfilePage() {
   useEffect(() => {
     (async () => {
       try {
-        const { reviews: r } = await api.getReviews(user?.id);
+        const r = await api.getReviews(user?.id);
         setReviews(r);
       } catch {}
       setLoading(false);

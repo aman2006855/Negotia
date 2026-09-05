@@ -20,8 +20,8 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const { user } = await api.login(email, password);
-      setUser(user);
+      const me = await api.login(email, password);
+      setUser(me.user);
       router.push('/jobs');
     } catch {
       setError('Invalid email or password');
@@ -58,8 +58,8 @@ export default function LoginPage() {
         freelancer: 'freelancer@demo.dev',
         jordan: 'jordan@demo.dev',
       };
-      const { user } = await api.login(emailMap[role], 'password123');
-      setUser(user);
+      const me = await api.login(emailMap[role], 'password123');
+      setUser(me.user);
       router.push('/jobs');
     } catch {
       setError('Login failed');

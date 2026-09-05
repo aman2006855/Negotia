@@ -26,8 +26,8 @@ export default function WorkspacePage() {
   useEffect(() => {
     (async () => {
       try {
-        const { projects } = await api.getProjects();
-        setProjects(projects);
+        const p = await api.getProjects();
+        setProjects(p);
       } catch {}
       setLoading(false);
     })();

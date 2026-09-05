@@ -159,12 +159,11 @@ export const mockApi = {
     else if (email === 'freelancer@demo.dev') currentUser = MOCK_USERS.f1;
     else if (email === 'jordan@demo.dev') currentUser = MOCK_USERS.f2;
     else throw new Error('Invalid email or password');
-    return { token: 'mock-jwt-token', user: currentUser };
+    return { user: currentUser, activeJob };
   },
 
   googleLogin: async () => {
     await new Promise((r) => setTimeout(r, 500));
-    // Simulate Google OAuth — returns a new user who needs profile setup
     const id = 'g' + Date.now();
     const user: User = {
       id, name: 'Alex Google', email: 'alex@gmail.com', role: 'FREELANCER',
@@ -173,7 +172,7 @@ export const mockApi = {
       createdAt: new Date().toISOString(),
     };
     currentUser = user;
-    return { token: 'mock-google-token', user, isNewUser: true, needsProfileSetup: true };
+    return { user, activeJob: null };
   },
 
   signup: async (data: { name: string; email: string; password: string }) => {
@@ -186,13 +185,13 @@ export const mockApi = {
       createdAt: new Date().toISOString(),
     };
     currentUser = user;
-    return { token: 'mock-jwt-token', user };
+    return { user, activeJob: null };
   },
 
-  updateProfile: async (data: Partial<User>) => {
+  updateProfile: async (data: Partial<User>): Promise<Me> => {
     await new Promise((r) => setTimeout(r, 300));
     if (currentUser) Object.assign(currentUser, data);
-    return { user: currentUser };
+    return { user: currentUser!, activeJob };
   },
 
   me: async (): Promise<Me> => {

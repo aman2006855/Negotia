@@ -19,8 +19,8 @@ export default function JobsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const all = await api.myJobs();
-        setJobs(all.jobs);
+        const all = await api.feed();
+        setJobs(all);
       } catch {}
       setLoading(false);
     })();

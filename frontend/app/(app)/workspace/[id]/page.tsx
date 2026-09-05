@@ -44,8 +44,8 @@ export default function WorkspaceDetailPage() {
 
   async function handleSendMessage() {
     if (!input.trim() || !project) return;
-    const { message } = await api.sendWorkspaceMessage(project.id, input.trim());
-    setProject((prev) => prev ? { ...prev, messages: [...prev.messages, message] } : prev);
+    const result = await api.sendWorkspaceMessage(project.id, input.trim());
+    setProject(result.project);
     setInput('');
   }
 
@@ -68,8 +68,8 @@ export default function WorkspaceDetailPage() {
 
   async function handleAddMilestone() {
     if (!newMilestone.trim() || !project) return;
-    const { milestone } = await api.addMilestone(project.id, newMilestone.trim());
-    setProject((prev) => prev ? { ...prev, milestones: [...prev.milestones, milestone] } : prev);
+    const result = await api.addMilestone(project.id, newMilestone.trim());
+    setProject(result.project);
     setNewMilestone('');
   }
 
