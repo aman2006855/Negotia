@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBoard } from '@/lib/store';
-import { clearToken } from '@/lib/api';
+import { signOut } from '@/lib/supabase';
 import { destroySocket } from '@/lib/socket';
 import { LogOutIcon, BriefcaseIcon, BarChartIcon, FolderIcon, MenuIcon, XIcon } from './icons';
 import { useState } from 'react';
@@ -14,8 +14,8 @@ export function Header() {
   const logout = useBoard((s) => s.logout);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  function handleLogout() {
-    clearToken();
+  async function handleLogout() {
+    await signOut();
     destroySocket();
     logout();
     router.push('/login');

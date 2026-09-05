@@ -1,13 +1,6 @@
 import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats } from './types';
 import { supabase, signInWithEmail, signUpWithEmail, signInWithGoogle as sbGoogle, getSession } from './supabase';
 
-export function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem('negotia_token');
-}
-export function setToken(token: string) { window.localStorage.setItem('negotia_token', token); }
-export function clearToken() { window.localStorage.removeItem('negotia_token'); }
-
 function mapUser(u: any): User {
   return {
     id: u.id, name: u.name, email: u.email, role: u.role,
@@ -38,8 +31,7 @@ function mapMilestone(m: any) {
 
 export const api = {
   login: async (email: string, password: string): Promise<Me> => {
-    const result = await signInWithEmail(email, password);
-    setToken(result.session.access_token);
+    await signInWithEmail(email, password);
     return api.me();
   },
 
@@ -49,10 +41,8 @@ export const api = {
 
   signup: async (d: { name: string; email: string; password: string }): Promise<Me> => {
     const result = await signUpWithEmail(d.email, d.password, d.name);
-    if (result.session) setToken(result.session.access_token);
-    try { return await api.me(); } catch {
-      return { user: mapUser({ id: result.user?.id ?? '', name: d.name, email: d.email, role: 'FREELANCER', skills: [], portfolio_links: [], past_work: [], total_earnings_cents: 0, completed_jobs: 0, active_jobs: 0, rating: 0, review_count: 0, created_at: new Date().toISOString() }), activeJob: null };
-    }
+    if (result.session) return api.me();
+    return { user: mapUser({ id: result.user?.id ?? '', name: d.name, email: d.email, role: 'FREELANCER', skills: [], portfolio_links: [], past_work: [], total_earnings_cents: 0, completed_jobs: 0, active_jobs: 0, rating: 0, review_count: 0, created_at: new Date().toISOString() }), activeJob: null };
   },
 
   updateProfile: async (data: Partial<User>): Promise<Me> => {

@@ -1,9 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from './supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient();
 
 export function getURL() {
   if (typeof window !== 'undefined' && window.location.origin) {
@@ -22,7 +19,7 @@ export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${getURL()}/jobs`,
+      redirectTo: `${getURL()}/auth/callback?next=/jobs`,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',
@@ -45,6 +42,7 @@ export async function signUpWithEmail(email: string, password: string, name: str
     password,
     options: {
       data: { name },
+      emailRedirectTo: `${getURL()}/auth/callback?next=/signup?step=role`,
     },
   });
   if (error) throw error;

@@ -113,9 +113,6 @@ export const useBoard = create<AppState>((set, get) => ({
   },
 
   logout: () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('negotia_token');
-    }
     set({
       user: null, jobs: [], jobsLoaded: false, myActiveJobId: null, myNegotiationId: null,
       negotiation: null, projects: [], reviews: [], dashboardStats: null,
