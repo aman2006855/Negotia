@@ -6,9 +6,24 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { SKILL_OPTIONS, EXPERIENCE_OPTIONS } from '@/lib/mock';
-import { BriefcaseIcon, SearchIcon, XIcon, CheckIcon, PlusIcon, GoogleIcon } from '@/components/icons';
+import { BriefcaseIcon, SearchIcon, XIcon, CheckIcon, PlusIcon, UserIcon, BuildingIcon } from '@/components/icons';
 
-type Step = 'auth' | 'profile';
+type Step = 'auth' | 'role' | 'entity' | 'profile';
+
+const INDUSTRY_OPTIONS = [
+  'Technology', 'Finance', 'Healthcare', 'Education', 'Marketing',
+  'E-commerce', 'Real Estate', 'Entertainment', 'Manufacturing', 'Consulting',
+  'Legal', 'Non-profit', 'Gaming', 'Media', 'Travel', 'Food & Beverage',
+  'Automotive', 'Aerospace', 'Telecommunications', 'Energy',
+];
+
+const COMPANY_SIZE_OPTIONS = [
+  'Solo (1 person)', 'Small (2-10)', 'Medium (11-50)', 'Large (51-200)', 'Enterprise (200+)',
+];
+
+const BUDGET_RANGE_OPTIONS = [
+  'Under $500', '$500 - $2,000', '$2,000 - $5,000', '$5,000 - $15,000', '$15,000 - $50,000', '$50,000+',
+];
 
 export default function SignupPage() {
   return (
@@ -24,20 +39,25 @@ function SignupContent() {
   const setUser = useBoard((s) => s.setUser);
   const user = useBoard((s) => s.user);
 
-  const initialStep = searchParams.get('step') === 'profile' ? 'profile' : 'auth';
   const isGoogleProvider = searchParams.get('provider') === 'google';
+  const initialStep = searchParams.get('step') === 'profile' ? 'role' : 'auth';
 
   const [step, setStep] = useState<Step>(initialStep);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Auth fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Profile fields
   const [role, setRole] = useState<'CLIENT' | 'FREELANCER'>('FREELANCER');
+  const [entityType, setEntityType] = useState<'INDIVIDUAL' | 'COMPANY'>('INDIVIDUAL');
+
+  const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [companySize, setCompanySize] = useState('');
+  const [budgetRange, setBudgetRange] = useState('');
+
   const [skills, setSkills] = useState<string[]>([]);
   const [capabilities, setCapabilities] = useState('');
   const [experience, setExperience] = useState('');
@@ -46,12 +66,11 @@ function SignupContent() {
   const [skillSearch, setSkillSearch] = useState('');
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
 
-  // If coming from Google OAuth, pre-fill user data
   useEffect(() => {
     if (isGoogleProvider && user) {
       setName(user.name);
       setEmail(user.email);
-      setStep('profile');
+      setStep('role');
     }
   }, [isGoogleProvider, user]);
 
@@ -65,7 +84,7 @@ function SignupContent() {
     setError('');
     try {
       await api.signup({ name, email, password });
-      setStep('profile');
+      setStep('role');
     } catch {
       setError('Signup failed. Email may already be in use.');
     } finally {
@@ -82,7 +101,7 @@ function SignupContent() {
         setUser(result.user);
         setName(result.user.name);
         setEmail(result.user.email);
-        setStep('profile');
+        setStep('role');
       }
     } catch {
       setError('Google sign-up failed');
@@ -112,38 +131,17 @@ function SignupContent() {
     setSkillSearch('');
     setShowSkillDropdown(false);
   }
-
-  function removeSkill(skill: string) {
-    setSkills(skills.filter((s) => s !== skill));
+  function removeSkill(skill: string) { setSkills(skills.filter((s) => s !== skill)); }
+  function addPortfolioLink() { setPortfolioLinks([...portfolioLinks, { label: '', url: '' }]); }
+  function updatePortfolioLink(i: number, field: 'label' | 'url', v: string) {
+    const u = [...portfolioLinks]; u[i] = { ...u[i], [field]: v }; setPortfolioLinks(u);
   }
-
-  function addPortfolioLink() {
-    setPortfolioLinks([...portfolioLinks, { label: '', url: '' }]);
+  function removePortfolioLink(i: number) { setPortfolioLinks(portfolioLinks.filter((_, j) => j !== i)); }
+  function addPastWork() { setPastWork([...pastWork, { title: '', description: '' }]); }
+  function updatePastWork(i: number, field: 'title' | 'description', v: string) {
+    const u = [...pastWork]; u[i] = { ...u[i], [field]: v }; setPastWork(u);
   }
-
-  function updatePortfolioLink(index: number, field: 'label' | 'url', value: string) {
-    const updated = [...portfolioLinks];
-    updated[index] = { ...updated[index], [field]: value };
-    setPortfolioLinks(updated);
-  }
-
-  function removePortfolioLink(index: number) {
-    setPortfolioLinks(portfolioLinks.filter((_, i) => i !== index));
-  }
-
-  function addPastWork() {
-    setPastWork([...pastWork, { title: '', description: '' }]);
-  }
-
-  function updatePastWork(index: number, field: 'title' | 'description', value: string) {
-    const updated = [...pastWork];
-    updated[index] = { ...updated[index], [field]: value };
-    setPastWork(updated);
-  }
-
-  function removePastWork(index: number) {
-    setPastWork(pastWork.filter((_, i) => i !== index));
-  }
+  function removePastWork(i: number) { setPastWork(pastWork.filter((_, j) => j !== i)); }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
@@ -153,20 +151,24 @@ function SignupContent() {
             <BriefcaseIcon className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-semibold text-txt-primary tracking-tight">
-            {step === 'auth' ? 'Create your account' : 'Set up your profile'}
+            {step === 'auth' && 'Create your account'}
+            {step === 'role' && 'How will you use Negotia?'}
+            {step === 'entity' && (role === 'CLIENT' ? 'Tell us about your company' : 'How do you work?')}
+            {step === 'profile' && 'Set up your profile'}
           </h1>
           <p className="mt-1 text-sm text-txt-secondary">
-            {step === 'auth' ? 'Join Negotia and start negotiating' : 'Tell us about yourself so we can match you better'}
+            {step === 'auth' && 'Join Negotia and start negotiating'}
+            {step === 'role' && 'Choose your primary role on the platform'}
+            {step === 'entity' && (role === 'CLIENT'
+              ? 'Help us personalize your experience'
+              : 'Help clients understand your work style')}
+            {step === 'profile' && 'Tell us about yourself so we can match you better'}
           </p>
         </div>
 
-        {step === 'auth' ? (
+        {step === 'auth' && (
           <div className="card p-6 space-y-4">
-            {error && (
-              <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">
-                {error}
-              </div>
-            )}
+            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
 
             <button onClick={handleGoogleSignup} disabled={loading}
               className="btn-secondary w-full justify-center gap-3 py-2.5">
@@ -180,12 +182,8 @@ function SignupContent() {
             </button>
 
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border-subtle" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-surface px-2 text-txt-tertiary">or</span>
-              </div>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-subtle" /></div>
+              <div className="relative flex justify-center text-xs"><span className="bg-surface px-2 text-txt-tertiary">or</span></div>
             </div>
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
@@ -209,13 +207,133 @@ function SignupContent() {
               </button>
             </form>
           </div>
-        ) : (
+        )}
+
+        {step === 'role' && (
           <div className="card p-6 space-y-6">
-            {error && (
-              <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">
-                {error}
+            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
+
+            <div>
+              <label className="label">I am a</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => setRole('FREELANCER')}
+                  className={`rounded-xl border-2 px-4 py-6 text-center transition-all ${
+                    role === 'FREELANCER'
+                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400'
+                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
+                  }`}>
+                  <UserIcon className="mx-auto h-8 w-8 mb-2" />
+                  <div className="text-sm font-semibold">Freelancer</div>
+                  <div className="mt-1 text-xs text-txt-tertiary">Find work & get hired</div>
+                </button>
+                <button type="button" onClick={() => setRole('CLIENT')}
+                  className={`rounded-xl border-2 px-4 py-6 text-center transition-all ${
+                    role === 'CLIENT'
+                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400'
+                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
+                  }`}>
+                  <BuildingIcon className="mx-auto h-8 w-8 mb-2" />
+                  <div className="text-sm font-semibold">Client</div>
+                  <div className="mt-1 text-xs text-txt-tertiary">Post jobs & hire</div>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              {!isGoogleProvider && (
+                <button onClick={() => setStep('auth')} className="btn-secondary flex-1">Back</button>
+              )}
+              <button onClick={() => setStep('entity')} className="btn-primary flex-1">Continue</button>
+            </div>
+          </div>
+        )}
+
+        {step === 'entity' && (
+          <div className="card p-6 space-y-6">
+            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
+
+            <div>
+              <label className="label">I am a</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => setEntityType('INDIVIDUAL')}
+                  className={`rounded-xl border-2 px-4 py-5 text-center transition-all ${
+                    entityType === 'INDIVIDUAL'
+                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400'
+                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
+                  }`}>
+                  <UserIcon className="mx-auto h-6 w-6 mb-1.5" />
+                  <div className="text-sm font-semibold">Individual</div>
+                  <div className="mt-0.5 text-xs text-txt-tertiary">Working solo</div>
+                </button>
+                <button type="button" onClick={() => setEntityType('COMPANY')}
+                  className={`rounded-xl border-2 px-4 py-5 text-center transition-all ${
+                    entityType === 'COMPANY'
+                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400'
+                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
+                  }`}>
+                  <BuildingIcon className="mx-auto h-6 w-6 mb-1.5" />
+                  <div className="text-sm font-semibold">Company</div>
+                  <div className="mt-0.5 text-xs text-txt-tertiary">Team or business</div>
+                </button>
+              </div>
+            </div>
+
+            {entityType === 'COMPANY' && (
+              <>
+                <div>
+                  <label className="label">Company Name</label>
+                  <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
+                    className="input-field" placeholder="Acme Inc." />
+                </div>
+                <div>
+                  <label className="label">Industry</label>
+                  <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="input-field">
+                    <option value="">Select industry</option>
+                    {INDUSTRY_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Company Size</label>
+                  <select value={companySize} onChange={(e) => setCompanySize(e.target.value)} className="input-field">
+                    <option value="">Select size</option>
+                    {COMPANY_SIZE_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                </div>
+                {role === 'CLIENT' && (
+                  <div>
+                    <label className="label">Typical Project Budget</label>
+                    <select value={budgetRange} onChange={(e) => setBudgetRange(e.target.value)} className="input-field">
+                      <option value="">Select budget range</option>
+                      {BUDGET_RANGE_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                )}
+              </>
+            )}
+
+            {role === 'FREELANCER' && entityType === 'INDIVIDUAL' && (
+              <div>
+                <label className="label">Preferred work style</label>
+                <select value={experience} onChange={(e) => setExperience(e.target.value)} className="input-field">
+                  <option value="">Select</option>
+                  <option value="full-time">Full-time freelance</option>
+                  <option value="part-time">Part-time / Side projects</option>
+                  <option value="contract">Long-term contracts</option>
+                  <option value="project">Project-based</option>
+                </select>
               </div>
             )}
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setStep('role')} className="btn-secondary flex-1">Back</button>
+              <button onClick={() => setStep('profile')} className="btn-primary flex-1">Continue</button>
+            </div>
+          </div>
+        )}
+
+        {step === 'profile' && (
+          <div className="card p-6 space-y-6">
+            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
 
             {isGoogleProvider && user && (
               <div className="flex items-center gap-3 rounded-lg bg-accent-50 px-4 py-3 border border-accent-200">
@@ -232,34 +350,13 @@ function SignupContent() {
               </div>
             )}
 
-            <div>
-              <label className="label">I am a</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRole('FREELANCER')}
-                  className={`rounded-xl border-2 px-4 py-4 text-center transition-all ${
-                    role === 'FREELANCER'
-                      ? 'border-accent-500 bg-accent-50 text-accent-700'
-                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
-                  }`}
-                >
-                  <div className="text-sm font-semibold">Freelancer</div>
-                  <div className="mt-0.5 text-xs">Find work & get hired</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('CLIENT')}
-                  className={`rounded-xl border-2 px-4 py-4 text-center transition-all ${
-                    role === 'CLIENT'
-                      ? 'border-accent-500 bg-accent-50 text-accent-700'
-                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
-                  }`}
-                >
-                  <div className="text-sm font-semibold">Client</div>
-                  <div className="mt-0.5 text-xs">Post jobs & hire</div>
-                </button>
-              </div>
+            <div className="rounded-lg bg-accent-50/50 border border-accent-200/50 px-4 py-3">
+              <p className="text-xs text-txt-secondary">
+                <span className="font-medium text-accent-700">{role === 'CLIENT' ? 'Client' : 'Freelancer'}</span>
+                {' '}&middot;{' '}
+                <span className="font-medium text-accent-700">{entityType === 'COMPANY' ? 'Company' : 'Individual'}</span>
+                {entityType === 'COMPANY' && companyName && <>{' '}&middot; <span className="font-medium text-accent-700">{companyName}</span></>}
+              </p>
             </div>
 
             {role === 'FREELANCER' && (
@@ -269,13 +366,11 @@ function SignupContent() {
                   <div className="relative">
                     <div className="flex items-center gap-2 rounded-lg border border-border-subtle bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-accent-500/30 focus-within:border-accent-500">
                       <SearchIcon className="h-4 w-4 text-txt-tertiary shrink-0" />
-                      <input
-                        type="text" value={skillSearch}
+                      <input type="text" value={skillSearch}
                         onChange={(e) => { setSkillSearch(e.target.value); setShowSkillDropdown(true); }}
                         onFocus={() => setShowSkillDropdown(true)}
                         placeholder="Search skills..."
-                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-txt-tertiary"
-                      />
+                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-txt-tertiary" />
                     </div>
                     {showSkillDropdown && filteredSkills.length > 0 && (
                       <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-border-subtle bg-surface shadow-medium">
@@ -293,9 +388,7 @@ function SignupContent() {
                       {skills.map((skill) => (
                         <span key={skill} className="inline-flex items-center gap-1 rounded-full bg-accent-50 px-2.5 py-1 text-xs font-medium text-accent-700">
                           {skill}
-                          <button onClick={() => removeSkill(skill)} className="hover:text-accent-900">
-                            <XIcon className="h-3 w-3" />
-                          </button>
+                          <button onClick={() => removeSkill(skill)} className="hover:text-accent-900"><XIcon className="h-3 w-3" /></button>
                         </span>
                       ))}
                     </div>
@@ -313,9 +406,7 @@ function SignupContent() {
                   <label className="label">Experience</label>
                   <select value={experience} onChange={(e) => setExperience(e.target.value)} className="input-field">
                     <option value="">Select experience level</option>
-                    {EXPERIENCE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
+                    {EXPERIENCE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
                 </div>
 
@@ -359,14 +450,19 @@ function SignupContent() {
               </>
             )}
 
-            <div className="flex items-center gap-3 pt-2">
-              {!isGoogleProvider && (
-                <button onClick={() => setStep('auth')} className="btn-secondary flex-1">
-                  Back
-                </button>
-              )}
+            {role === 'CLIENT' && (
+              <div>
+                <label className="label">What are you looking for?</label>
+                <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)}
+                  className="input-field resize-none" rows={3}
+                  placeholder="Tell freelancers what kind of work you typically need..." />
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setStep('entity')} className="btn-secondary flex-1">Back</button>
               <button onClick={handleProfileSubmit} disabled={loading} className="btn-primary flex-1">
-                {loading ? 'Saving...' : isGoogleProvider ? 'Complete setup' : 'Complete setup'}
+                {loading ? 'Saving...' : 'Complete setup'}
               </button>
             </div>
           </div>
@@ -375,9 +471,7 @@ function SignupContent() {
         {step === 'auth' && (
           <p className="mt-6 text-center text-sm text-txt-secondary">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-accent-600 hover:text-accent-700">
-              Sign in
-            </Link>
+            <Link href="/login" className="font-medium text-accent-600 hover:text-accent-700">Sign in</Link>
           </p>
         )}
       </div>
