@@ -99,7 +99,7 @@ function SignupContent() {
         portfolioLinks, pastWork,
       });
       if (updatedUser) setUser(updatedUser);
-      router.push('/');
+      router.push('/jobs');
     } catch {
       setError('Profile setup failed');
     } finally {

@@ -3,6 +3,7 @@ export type JobStatus = 'OPEN' | 'NEGOTIATING' | 'IN_PROGRESS' | 'COMPLETED' | '
 export type ProjectStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED';
 export type MilestoneStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type NegotiationOutcome = 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+export type ThemeMode = 'light' | 'dark';
 
 export interface User {
   id: string;
@@ -98,6 +99,7 @@ export interface Project {
 export interface Review {
   id: string;
   projectId: string;
+  projectTitle: string;
   jobId: string;
   clientName: string;
   freelancerName: string;

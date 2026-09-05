@@ -121,12 +121,12 @@ const MOCK_PROJECTS: Project[] = [
 ];
 
 const MOCK_REVIEWS: Review[] = [
-  { id: 'r1', projectId: 'p0', jobId: 'j5', clientName: 'Ava Chen', freelancerName: 'Sam Rivera', rating: 5, comment: 'Excellent work on the CI/CD pipeline. Sam set up everything perfectly with automated testing and deployment. Highly recommend!', createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
-  { id: 'r2', projectId: 'p-1', jobId: 'j-prev', clientName: 'Marcus Lee', freelancerName: 'Sam Rivera', rating: 5, comment: 'Built a complete real-time analytics dashboard. Delivered on time with great communication throughout.', createdAt: new Date(Date.now() - 45 * 86400000).toISOString() },
-  { id: 'r3', projectId: 'p-2', jobId: 'j-prev2', clientName: 'Elena Vasquez', freelancerName: 'Sam Rivera', rating: 4, comment: 'Great React work. Minor delays on the final deliverable but overall quality was excellent.', createdAt: new Date(Date.now() - 60 * 86400000).toISOString() },
-  { id: 'r4', projectId: 'p-3', jobId: 'j-prev3', clientName: 'Tom Wilson', freelancerName: 'Sam Rivera', rating: 5, comment: 'Sam migrated our entire e-commerce platform from Shopify to Next.js. Zero downtime during the switch.', createdAt: new Date(Date.now() - 75 * 86400000).toISOString() },
-  { id: 'r5', projectId: 'p-4', jobId: 'j-prev4', clientName: 'Ava Chen', freelancerName: 'Jordan Kim', rating: 5, comment: 'Beautiful design system for our SaaS product. Jordan understood our vision perfectly.', createdAt: new Date(Date.now() - 20 * 86400000).toISOString() },
-  { id: 'r6', projectId: 'p-5', jobId: 'j-prev5', clientName: 'Priya Sharma', freelancerName: 'Jordan Kim', rating: 4, comment: 'Great mobile UI design. The prototypes were very polished.', createdAt: new Date(Date.now() - 40 * 86400000).toISOString() },
+  { id: 'r1', projectId: 'p0', projectTitle: 'CI/CD Pipeline Setup', jobId: 'j5', clientName: 'Ava Chen', freelancerName: 'Sam Rivera', rating: 5, comment: 'Excellent work on the CI/CD pipeline. Sam set up everything perfectly with automated testing and deployment. Highly recommend!', createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
+  { id: 'r2', projectId: 'p-1', projectTitle: 'Real-time Analytics Dashboard', jobId: 'j-prev', clientName: 'Marcus Lee', freelancerName: 'Sam Rivera', rating: 5, comment: 'Built a complete real-time analytics dashboard. Delivered on time with great communication throughout.', createdAt: new Date(Date.now() - 45 * 86400000).toISOString() },
+  { id: 'r3', projectId: 'p-2', projectTitle: 'React Component Library', jobId: 'j-prev2', clientName: 'Elena Vasquez', freelancerName: 'Sam Rivera', rating: 4, comment: 'Great React work. Minor delays on the final deliverable but overall quality was excellent.', createdAt: new Date(Date.now() - 60 * 86400000).toISOString() },
+  { id: 'r4', projectId: 'p-3', projectTitle: 'E-commerce Platform Migration', jobId: 'j-prev3', clientName: 'Tom Wilson', freelancerName: 'Sam Rivera', rating: 5, comment: 'Sam migrated our entire e-commerce platform from Shopify to Next.js. Zero downtime during the switch.', createdAt: new Date(Date.now() - 75 * 86400000).toISOString() },
+  { id: 'r5', projectId: 'p-4', projectTitle: 'SaaS Design System', jobId: 'j-prev4', clientName: 'Ava Chen', freelancerName: 'Jordan Kim', rating: 5, comment: 'Beautiful design system for our SaaS product. Jordan understood our vision perfectly.', createdAt: new Date(Date.now() - 20 * 86400000).toISOString() },
+  { id: 'r6', projectId: 'p-5', projectTitle: 'Mobile App UI', jobId: 'j-prev5', clientName: 'Priya Sharma', freelancerName: 'Jordan Kim', rating: 4, comment: 'Great mobile UI design. The prototypes were very polished.', createdAt: new Date(Date.now() - 40 * 86400000).toISOString() },
 ];
 
 let currentUser: User | null = null;
@@ -360,7 +360,8 @@ export const mockApi = {
     await new Promise((r) => setTimeout(r, 300));
     const project = MOCK_PROJECTS.find((p) => p.id === data.projectId);
     const review: Review = {
-      id: 'r' + Date.now(), projectId: data.projectId, jobId: project?.jobId ?? '',
+      id: 'r' + Date.now(), projectId: data.projectId, projectTitle: project?.title ?? 'Project',
+      jobId: project?.jobId ?? '',
       clientName: currentUser?.name ?? 'Ava Chen', freelancerName: project?.freelancerName ?? '',
       rating: data.rating, comment: data.comment, createdAt: new Date().toISOString(),
     };

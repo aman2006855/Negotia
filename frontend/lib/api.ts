@@ -74,6 +74,15 @@ export const api = {
     return res.json();
   },
 
+  joinNegotiation: async () => {
+    if (USE_MOCK) return mockApi.joinNegotiation();
+    const res = await fetch(`${API_URL}/api/negotiations/join`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (!res.ok) throw new Error('Could not join negotiation');
+    return res.json();
+  },
+
   createJob: async (data: { title: string; description: string; budgetCents: number; agreementText: string }) => {
     if (USE_MOCK) return mockApi.createJob(data);
     const res = await fetch(`${API_URL}/api/jobs`, {

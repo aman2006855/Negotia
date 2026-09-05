@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       const { user } = await api.login(email, password);
       setUser(user);
-      router.push('/');
+      router.push('/jobs');
     } catch {
       setError('Invalid email or password');
     } finally {
@@ -37,11 +37,10 @@ export default function LoginPage() {
       const result: any = await api.googleLogin();
       if (result?.user) {
         setUser(result.user);
-        // New Google users need to complete profile setup
         if (result.needsProfileSetup) {
           router.push('/signup?step=profile&provider=google');
         } else {
-          router.push('/');
+          router.push('/jobs');
         }
       }
     } catch {
@@ -61,7 +60,7 @@ export default function LoginPage() {
       };
       const { user } = await api.login(emailMap[role], 'password123');
       setUser(user);
-      router.push('/');
+      router.push('/jobs');
     } catch {
       setError('Login failed');
     } finally {

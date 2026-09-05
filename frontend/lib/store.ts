@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FeedJob, Me, User, Project, Review, DashboardStats } from './types';
+import type { FeedJob, Me, User, Project, Review, DashboardStats, NegotiationState, ThemeMode } from './types';
 
 interface AppState {
   user: User | null;
@@ -7,11 +7,14 @@ interface AppState {
   jobsLoaded: boolean;
   myActiveJobId: string | null;
   myNegotiationId: string | null;
+  negotiation: NegotiationState | null;
   projects: Project[];
   reviews: Review[];
   dashboardStats: DashboardStats | null;
   toast: string | null;
   sidebarOpen: boolean;
+  theme: ThemeMode;
+  watchedJobIds: string[];
 
   setUser: (user: User) => void;
   setJobs: (jobs: FeedJob[]) => void;
@@ -19,6 +22,7 @@ interface AppState {
   patchJob: (id: string, patch: Partial<FeedJob>) => void;
   acquireLock: (jobId: string, negotiationId: string) => void;
   releaseLock: () => void;
+  setNegotiation: (negotiation: NegotiationState | null) => void;
   setProjects: (projects: Project[]) => void;
   updateProject: (id: string, patch: Partial<Project>) => void;
   setReviews: (reviews: Review[]) => void;
@@ -26,22 +30,38 @@ interface AppState {
   showToast: (message: string) => void;
   dismissToast: () => void;
   toggleSidebar: () => void;
+  setTheme: (theme: ThemeMode) => void;
+  toggleTheme: () => void;
+  toggleWatch: (jobId: string) => void;
   logout: () => void;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-export const useBoard = create<AppState>((set) => ({
+function loadTheme(): ThemeMode {
+  if (typeof window === 'undefined') return 'light';
+  return (localStorage.getItem('negotia_theme') as ThemeMode) || 'light';
+}
+
+function loadWatched(): string[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem('negotia_watched') || '[]'); } catch { return []; }
+}
+
+export const useBoard = create<AppState>((set, get) => ({
   user: null,
   jobs: [],
   jobsLoaded: false,
   myActiveJobId: null,
   myNegotiationId: null,
+  negotiation: null,
   projects: [],
   reviews: [],
   dashboardStats: null,
   toast: null,
   sidebarOpen: false,
+  theme: loadTheme(),
+  watchedJobIds: loadWatched(),
 
   setUser: (user) => set({ user }),
   setJobs: (jobs) => set({ jobs, jobsLoaded: true }),
@@ -55,6 +75,7 @@ export const useBoard = create<AppState>((set) => ({
   patchJob: (id, patch) => set((s) => ({ jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...patch } : j)) })),
   acquireLock: (jobId, negotiationId) => set({ myActiveJobId: jobId, myNegotiationId: negotiationId }),
   releaseLock: () => set({ myActiveJobId: null, myNegotiationId: null }),
+  setNegotiation: (negotiation) => set({ negotiation }),
   setProjects: (projects) => set({ projects }),
   updateProject: (id, patch) => set((s) => ({
     projects: s.projects.map((p) => (p.id === id ? { ...p, ...patch } : p)),
@@ -68,8 +89,36 @@ export const useBoard = create<AppState>((set) => ({
   },
   dismissToast: () => set({ toast: null }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  logout: () => set({
-    user: null, jobs: [], jobsLoaded: false, myActiveJobId: null, myNegotiationId: null,
-    projects: [], reviews: [], dashboardStats: null,
-  }),
+
+  setTheme: (theme) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('negotia_theme', theme);
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    }
+    set({ theme });
+  },
+
+  toggleTheme: () => {
+    const next = get().theme === 'light' ? 'dark' : 'light';
+    get().setTheme(next);
+  },
+
+  toggleWatch: (jobId) => {
+    const current = get().watchedJobIds;
+    const next = current.includes(jobId) ? current.filter((id) => id !== jobId) : [...current, jobId];
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('negotia_watched', JSON.stringify(next));
+    }
+    set({ watchedJobIds: next });
+  },
+
+  logout: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('negotia_token');
+    }
+    set({
+      user: null, jobs: [], jobsLoaded: false, myActiveJobId: null, myNegotiationId: null,
+      negotiation: null, projects: [], reviews: [], dashboardStats: null,
+    });
+  },
 }));

@@ -2,122 +2,224 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
-.dark { color-scheme: dark; }
-
-body {
-  @apply bg-canvas text-txt-primary antialiased;
-  font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif;
+/* ─── Light Theme (default) ─── */
+:root {
+  color-scheme: light;
+  --color-canvas: 220 23% 98%;
+  --color-surface: 0 0% 100%;
+  --color-elevated: 0 0% 100%;
+  --color-inset: 220 18% 94%;
+  --color-border-subtle: 220 16% 90%;
+  --color-border-strong: 220 14% 82%;
+  --color-txt-primary: 224 28% 14%;
+  --color-txt-secondary: 220 12% 37%;
+  --color-txt-tertiary: 220 10% 50%;
+  --color-accent-50: 230 100% 98%;
+  --color-accent-100: 228 100% 96%;
+  --color-accent-200: 226 90% 92%;
+  --color-accent-400: 232 78% 68%;
+  --color-accent-500: 231 85% 63%;
+  --color-accent-600: 233 74% 57%;
+  --color-accent-700: 235 69% 50%;
+  --color-success-50: 145 64% 96%;
+  --color-success-500: 142 71% 45%;
+  --color-success-600: 142 72% 35%;
+  --color-warning-50: 48 100% 96%;
+  --color-warning-500: 38 92% 50%;
+  --color-warning-600: 38 80% 44%;
+  --color-danger-50: 0 86% 97%;
+  --color-danger-500: 0 84% 60%;
+  --color-danger-600: 0 72% 51%;
 }
 
-* { @apply border-border-subtle; }
+/* ─── Dark Theme ─── */
+.dark {
+  color-scheme: dark;
+  --color-canvas: 225 24% 10%;
+  --color-surface: 223 18% 15%;
+  --color-elevated: 222 18% 18%;
+  --color-inset: 224 22% 8%;
+  --color-border-subtle: 222 15% 24%;
+  --color-border-strong: 220 12% 32%;
+  --color-txt-primary: 210 20% 96%;
+  --color-txt-secondary: 214 13% 74%;
+  --color-txt-tertiary: 215 10% 55%;
+  --color-accent-50: 230 40% 20%;
+  --color-accent-100: 228 35% 25%;
+  --color-accent-200: 227 32% 30%;
+  --color-accent-400: 231 60% 55%;
+  --color-accent-500: 233 65% 60%;
+  --color-accent-600: 233 65% 60%;
+  --color-accent-700: 231 60% 55%;
+  --color-success-50: 145 30% 15%;
+  --color-success-500: 142 60% 50%;
+  --color-success-600: 145 60% 45%;
+  --color-warning-50: 40 30% 15%;
+  --color-warning-500: 38 80% 50%;
+  --color-warning-600: 32 85% 48%;
+  --color-danger-50: 0 30% 15%;
+  --color-danger-500: 0 75% 55%;
+  --color-danger-600: 0 70% 50%;
+}
 
-::selection { @apply bg-accent-100 text-accent-700; }
-.dark ::selection { @apply bg-accent-dark-50 text-accent-dark-500; }
+/* ─── Base Styles ─── */
+body {
+  @apply antialiased;
+  font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif;
+  background: hsl(var(--color-canvas));
+  color: hsl(var(--color-txt-primary));
+}
+
+* { border-color: hsl(var(--color-border-subtle)); }
+
+::selection { background: hsl(var(--color-accent-100)); color: hsl(var(--color-accent-700)); }
+.dark ::selection { background: hsl(var(--color-accent-50)); color: hsl(var(--color-accent-500)); }
 
 input, textarea, select {
-  @apply bg-surface text-txt-primary border border-border-subtle rounded-lg;
-  @apply focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500;
-  @apply placeholder:text-txt-tertiary;
+  background: hsl(var(--color-surface));
+  color: hsl(var(--color-txt-primary));
+  border: 1px solid hsl(var(--color-border-subtle));
+  border-radius: 0.5rem;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px hsla(var(--color-accent-500) / 0.3);
+  border-color: hsl(var(--color-accent-500));
+}
+input::placeholder, textarea::placeholder, select::placeholder {
+  color: hsl(var(--color-txt-tertiary));
 }
 
-button { @apply cursor-pointer; }
+button { cursor: pointer; }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent-600 px-4 py-2.5 text-sm font-medium text-white shadow-soft;
-    @apply transition-all duration-150 hover:bg-accent-700 hover:shadow-medium;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/50 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
     @apply active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    background: hsl(var(--color-accent-600));
+    color: white;
+    box-shadow: 0 1px 2px hsla(224,30%,10%,0.06), 0 8px 20px hsla(224,30%,10%,0.04);
   }
+  .btn-primary:hover {
+    background: hsl(var(--color-accent-700));
+    box-shadow: 0 2px 6px hsla(224,30%,10%,0.08), 0 12px 28px hsla(224,30%,10%,0.06);
+  }
+  .dark .btn-primary { box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 12px 24px rgba(0,0,0,0.24); }
+  .dark .btn-primary:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 16px 32px rgba(0,0,0,0.3); }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle bg-surface px-4 py-2.5 text-sm font-medium text-txt-primary;
-    @apply transition-all duration-150 hover:bg-inset hover:border-border-strong hover:shadow-soft;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
     @apply active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    background: hsl(var(--color-surface));
+    color: hsl(var(--color-txt-primary));
+    border: 1px solid hsl(var(--color-border-subtle));
+  }
+  .btn-secondary:hover {
+    background: hsl(var(--color-inset));
+    border-color: hsl(var(--color-border-strong));
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-txt-secondary;
-    @apply transition-all duration-150 hover:bg-inset hover:text-txt-primary;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/30;
     @apply active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    color: hsl(var(--color-txt-secondary));
+  }
+  .btn-ghost:hover {
+    background: hsl(var(--color-inset));
+    color: hsl(var(--color-txt-primary));
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-danger-500/30 bg-danger-50 px-4 py-2.5 text-sm font-medium text-danger-600;
-    @apply transition-all duration-150 hover:bg-danger-100 hover:border-danger-500/40;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-500/30 focus-visible:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-150;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
     @apply active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    border: 1px solid hsla(var(--color-danger-500) / 0.3);
+    background: hsl(var(--color-danger-50));
+    color: hsl(var(--color-danger-600));
+  }
+  .btn-danger:hover {
+    background: hsl(var(--color-danger-50));
+    filter: brightness(0.95);
   }
 
   .card {
-    @apply rounded-2xl border border-border-subtle bg-surface shadow-soft;
-    @apply transition-all duration-200;
+    @apply rounded-2xl transition-all duration-200;
+    border: 1px solid hsl(var(--color-border-subtle));
+    background: hsl(var(--color-surface));
+    box-shadow: 0 1px 2px hsla(224,30%,10%,0.06), 0 8px 20px hsla(224,30%,10%,0.04);
   }
+  .dark .card { box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 12px 24px rgba(0,0,0,0.22); }
 
   .card-hover {
-    @apply card hover:shadow-medium hover:border-border-strong hover:-translate-y-0.5;
+    @apply card transition-all duration-200;
+  }
+  .card-hover:hover {
+    box-shadow: 0 2px 6px hsla(224,30%,10%,0.08), 0 12px 28px hsla(224,30%,10%,0.06);
+    border-color: hsl(var(--color-border-strong));
+    transform: translateY(-2px);
   }
 
   .input-field {
-    @apply w-full rounded-lg border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-txt-primary;
-    @apply placeholder:text-txt-tertiary;
-    @apply focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500;
-    @apply transition-colors duration-150;
+    @apply w-full rounded-lg px-3.5 py-2.5 text-sm transition-colors duration-150;
+    background: hsl(var(--color-surface));
+    color: hsl(var(--color-txt-primary));
+    border: 1px solid hsl(var(--color-border-subtle));
+  }
+  .input-field::placeholder { color: hsl(var(--color-txt-tertiary)); }
+  .input-field:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px hsla(var(--color-accent-500) / 0.3);
+    border-color: hsl(var(--color-accent-500));
   }
 
   .label {
-    @apply block text-sm font-medium text-txt-primary mb-1.5;
+    @apply block text-sm font-medium mb-1.5;
+    color: hsl(var(--color-txt-primary));
   }
 
-  .helper {
-    @apply text-xs text-txt-secondary mt-1;
-  }
-
-  .error-text {
-    @apply text-xs text-danger-500 mt-1;
-  }
-
-  .tab-active {
-    @apply bg-accent-50 text-accent-700 font-medium border-b-2 border-accent-600;
-  }
-
-  .tab-inactive {
-    @apply text-txt-secondary hover:text-txt-primary hover:bg-inset border-b-2 border-transparent;
-  }
+  .helper { @apply text-xs mt-1; color: hsl(var(--color-txt-secondary)); }
+  .error-text { @apply text-xs mt-1; color: hsl(var(--color-danger-500)); }
 
   .stat-card {
     @apply card p-5 flex flex-col gap-1;
   }
 
   .badge-success {
-    @apply inline-flex items-center gap-1 rounded-full bg-success-50 px-2.5 py-0.5 text-xs font-medium text-success-600;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: hsl(var(--color-success-50));
+    color: hsl(var(--color-success-600));
   }
-
   .badge-warning {
-    @apply inline-flex items-center gap-1 rounded-full bg-warning-50 px-2.5 py-0.5 text-xs font-medium text-warning-600;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: hsl(var(--color-warning-50));
+    color: hsl(var(--color-warning-600));
   }
-
   .badge-danger {
-    @apply inline-flex items-center gap-1 rounded-full bg-danger-50 px-2.5 py-0.5 text-xs font-medium text-danger-600;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: hsl(var(--color-danger-50));
+    color: hsl(var(--color-danger-600));
   }
-
   .badge-neutral {
-    @apply inline-flex items-center gap-1 rounded-full bg-inset px-2.5 py-0.5 text-xs font-medium text-txt-secondary;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: hsl(var(--color-inset));
+    color: hsl(var(--color-txt-secondary));
   }
 
   .page-container {
-    @apply mx-auto max-w-6xl px-4 md:px-6 py-6;
+    @apply mx-auto max-w-2xl px-4 py-4;
   }
 
   .section-title {
-    @apply text-xl font-semibold text-txt-primary tracking-tight;
+    @apply text-lg font-semibold tracking-tight;
+    color: hsl(var(--color-txt-primary));
   }
 
   .section-desc {
-    @apply mt-1 text-sm text-txt-secondary;
+    @apply mt-1 text-sm;
+    color: hsl(var(--color-txt-secondary));
   }
 }
 
@@ -140,14 +242,7 @@ button { @apply cursor-pointer; }
     scrollbar-width: thin;
     scrollbar-color: hsl(220 16% 85%) transparent;
   }
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: hsl(220 16% 85%);
-    border-radius: 3px;
-  }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: hsl(220 16% 85%); border-radius: 3px; }
 }

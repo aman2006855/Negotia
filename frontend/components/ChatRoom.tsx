@@ -7,6 +7,13 @@ import type { ChatMessage, NegotiationState } from '@/lib/types';
 import { SendIcon, CheckIcon, XIcon } from './icons';
 import { AgreementModal } from './AgreementModal';
 
+const QUICK_REPLIES = [
+  'Can you share the Figma file?',
+  'Is the budget negotiable?',
+  "What's your timeline?",
+  'Can we start this week?',
+];
+
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
@@ -87,13 +94,13 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-3.5rem)] flex-col">
-        <div className="border-b border-border-subtle bg-surface px-4 py-3">
-          <div className="mx-auto flex max-w-3xl items-center justify-between">
+      <div className="flex flex-col" style={{ height: 'calc(100dvh - 64px)' }}>
+        <div className="shrink-0 border-b border-border-subtle bg-surface px-4 py-3">
+          <div className="mx-auto flex max-w-2xl items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-txt-primary">{state.job.title}</h2>
               <p className="text-xs text-txt-secondary">
-                {state.myRole === 'CLIENT' ? `Negotiating with freelancer` : `Negotiating with ${state.job.clientName}`}
+                {state.myRole === 'CLIENT' ? 'Negotiating with freelancer' : `Negotiating with ${state.job.clientName}`}
                 {' · '}
                 <span className="font-medium text-accent-600">
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(state.job.budgetCents / 100)}
@@ -104,10 +111,10 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
         </div>
 
         {state.outcome && (
-          <div className={`border-b px-4 py-3 text-center text-sm font-medium ${
-            state.outcome === 'ACCEPTED' ? 'border-success-500/20 bg-success-50 text-success-600' :
-            state.outcome === 'DECLINED' ? 'border-danger-500/20 bg-danger-50 text-danger-600' :
-            'border-warning-500/20 bg-warning-50 text-warning-600'
+          <div className={`shrink-0 border-b px-4 py-3 text-center text-sm font-medium ${
+            state.outcome === 'ACCEPTED' ? 'border-success-500/20 bg-success-50 text-success-600 dark:bg-success-50/20' :
+            state.outcome === 'DECLINED' ? 'border-danger-500/20 bg-danger-50 text-danger-600 dark:bg-danger-50/20' :
+            'border-warning-500/20 bg-warning-50 text-warning-600 dark:bg-warning-50/20'
           }`}>
             {state.outcome === 'ACCEPTED' && 'Agreement signed — deal confirmed'}
             {state.outcome === 'DECLINED' && 'Negotiation declined — job returned to feed'}
@@ -116,14 +123,14 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
         )}
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          <div className="mx-auto max-w-3xl space-y-3">
+          <div className="mx-auto max-w-2xl space-y-3">
             {state.messages.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="mb-2 rounded-full bg-accent-50 p-3">
+                <div className="mb-2 rounded-full bg-accent-50 p-3 dark:bg-accent-50/20">
                   <SendIcon className="h-5 w-5 text-accent-500" />
                 </div>
                 <p className="text-sm font-medium text-txt-secondary">Start the conversation</p>
-                <p className="mt-1 text-xs text-txt-tertiary">Messages are end-to-end visible to both participants</p>
+                <p className="mt-1 text-xs text-txt-tertiary">Messages are visible to both participants</p>
               </div>
             )}
             {state.messages.map((msg) => {
@@ -133,7 +140,7 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
                   <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 ${
                     mine
                       ? 'bg-accent-600 text-white rounded-br-sm'
-                      : 'bg-surface border border-border-subtle text-txt-primary rounded-bl-sm'
+                      : 'bg-inset text-txt-primary rounded-bl-sm'
                   }`}>
                     {!mine && <p className="mb-0.5 text-xs font-medium text-accent-600">{msg.senderName}</p>}
                     <p className="text-sm leading-relaxed">{msg.body}</p>
@@ -149,13 +156,13 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
         </div>
 
         {!state.outcome && (
-          <div className="border-t border-border-subtle bg-surface px-4 py-3">
-            <div className="mx-auto max-w-3xl">
+          <div className="shrink-0 border-t border-border-subtle bg-surface px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            <div className="mx-auto max-w-2xl">
               {isFreelancer && (
                 <div className="mb-3 flex items-center gap-2">
                   <button
                     onClick={handleDecline}
-                    className="flex items-center gap-1.5 rounded-lg border border-danger-500/30 bg-danger-50 px-3.5 py-2 text-sm font-medium text-danger-600 transition hover:bg-danger-100"
+                    className="flex items-center gap-1.5 rounded-lg border border-danger-500/30 bg-danger-50 px-3.5 py-2 text-sm font-medium text-danger-600 transition hover:bg-danger-100 dark:bg-danger-50/20 dark:border-danger-500/30"
                   >
                     <XIcon className="h-3.5 w-3.5" />
                     Decline
@@ -169,14 +176,27 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
                   </button>
                 </div>
               )}
+
+              <div className="mb-2 flex gap-1.5 overflow-x-auto scrollbar-thin pb-1">
+                {QUICK_REPLIES.map((reply) => (
+                  <button
+                    key={reply}
+                    onClick={() => setInput(reply)}
+                    className="shrink-0 rounded-full border border-border-subtle bg-surface px-3 py-1.5 text-xs font-medium text-txt-secondary transition-all hover:bg-inset hover:border-border-strong hover:text-txt-primary dark:bg-elevated"
+                  >
+                    {reply}
+                  </button>
+                ))}
+              </div>
+
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                  placeholder="Type a message…"
-                  className="flex-1 rounded-lg border border-border-subtle bg-surface px-3.5 py-2.5 text-sm text-txt-primary placeholder:text-txt-tertiary focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20"
+                  placeholder="Type a message..."
+                  className="input-field flex-1"
                   disabled={sending}
                 />
                 <button
