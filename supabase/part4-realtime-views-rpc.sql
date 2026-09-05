@@ -4,12 +4,20 @@
 -- Copy this entire block → Paste in Supabase SQL Editor → Run
 -- ============================================================================
 
-alter publication supabase_realtime add table jobs;
-alter publication supabase_realtime add table workspace_messages;
-alter publication supabase_realtime add table negotiation_messages;
-alter publication supabase_realtime add table projects;
-alter publication supabase_realtime add table milestones;
-alter publication supabase_realtime add table negotiations;
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['jobs','workspace_messages','negotiation_messages','projects','milestones','negotiations']
+  loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and tablename = t
+    ) then
+      execute format('alter publication supabase_realtime add table %I', t);
+    end if;
+  end loop;
+end $$;
 
 create or replace view public.freelancer_feed as
 select j.id, j.title, j.description, j.budget_cents, j.status, j.created_at,
