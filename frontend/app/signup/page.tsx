@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { BriefcaseIcon, SearchIcon, XIcon, UserIcon, BuildingIcon } from '@/components/icons';
 
-type Step = 'email' | 'password' | 'role' | 'entity' | 'profile';
+const VALID_STEPS = ['email', 'password', 'role', 'entity', 'profile'] as const;
+type Step = (typeof VALID_STEPS)[number];
 
 const SKILL_OPTIONS = [
   'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Go', 'Rust',
@@ -51,6 +52,11 @@ function validatePassword(p: string): { valid: boolean; error: string } {
   return { valid: true, error: '' };
 }
 
+function getStep(raw: string | null): Step {
+  if (raw && VALID_STEPS.includes(raw as Step)) return raw as Step;
+  return 'email';
+}
+
 export default function SignupPage() {
   return (
     <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" /></div>}>
@@ -65,10 +71,12 @@ function SignupContent() {
   const setUser = useBoard((s) => s.setUser);
   const user = useBoard((s) => s.user);
 
-  const isGoogleProvider = searchParams.get('provider') === 'google';
-  const initialStep = searchParams.get('step') === 'profile' ? 'role' : 'email';
+  const step = getStep(searchParams.get('step'));
 
-  const [step, setStep] = useState<Step>(initialStep);
+  function go(s: Step) {
+    router.push(`/signup?step=${s}`);
+  }
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -95,14 +103,6 @@ function SignupContent() {
   const [skillSearch, setSkillSearch] = useState('');
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
 
-  useEffect(() => {
-    if (isGoogleProvider && user) {
-      setName(user.name);
-      setEmail(user.email);
-      setStep('role');
-    }
-  }, [isGoogleProvider, user]);
-
   const filteredSkills = SKILL_OPTIONS.filter(
     (s) => s.toLowerCase().includes(skillSearch.toLowerCase()) && !skills.includes(s)
   );
@@ -110,15 +110,9 @@ function SignupContent() {
   function handleEmailNext() {
     setError('');
     setEmailError('');
-    if (!email) {
-      setEmailError('Email is required');
-      return;
-    }
-    if (!validateEmail(email)) {
-      setEmailError('Enter a valid email address');
-      return;
-    }
-    setStep('password');
+    if (!email) { setEmailError('Email is required'); return; }
+    if (!validateEmail(email)) { setEmailError('Enter a valid email address'); return; }
+    go('password');
   }
 
   async function handlePasswordSubmit(e: React.FormEvent) {
@@ -126,14 +120,11 @@ function SignupContent() {
     setError('');
     setPasswordError('');
     const v = validatePassword(password);
-    if (!v.valid) {
-      setPasswordError(v.error);
-      return;
-    }
+    if (!v.valid) { setPasswordError(v.error); return; }
     setLoading(true);
     try {
       await api.signup({ name: name || email.split('@')[0], email, password });
-      setStep('role');
+      go('role');
     } catch {
       setError('Signup failed. Email may already be in use.');
     } finally {
@@ -185,6 +176,22 @@ function SignupContent() {
   }
   function removePastWork(i: number) { setPastWork(pastWork.filter((_, j) => j !== i)); }
 
+  const titles: Record<Step, string> = {
+    email: 'Create your account',
+    password: 'Set a password',
+    role: 'How will you use Negotia?',
+    entity: role === 'CLIENT' ? 'Tell us about your company' : 'How do you work?',
+    profile: 'Set up your profile',
+  };
+
+  const subtitles: Record<Step, string> = {
+    email: 'Join Negotia and start negotiating',
+    password: 'Secure your account',
+    role: 'Choose your primary role on the platform',
+    entity: role === 'CLIENT' ? 'Help us personalize your experience' : 'Help clients understand your work style',
+    profile: 'Tell us about yourself so we can match you better',
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
@@ -192,28 +199,15 @@ function SignupContent() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-600 text-white shadow-medium">
             <BriefcaseIcon className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-semibold text-txt-primary tracking-tight">
-            {step === 'email' && 'Create your account'}
-            {step === 'password' && 'Set a password'}
-            {step === 'role' && 'How will you use Negotia?'}
-            {step === 'entity' && (role === 'CLIENT' ? 'Tell us about your company' : 'How do you work?')}
-            {step === 'profile' && 'Set up your profile'}
-          </h1>
-          <p className="mt-1 text-sm text-txt-secondary">
-            {step === 'email' && 'Join Negotia and start negotiating'}
-            {step === 'password' && 'Secure your account'}
-            {step === 'role' && 'Choose your primary role on the platform'}
-            {step === 'entity' && (role === 'CLIENT'
-              ? 'Help us personalize your experience'
-              : 'Help clients understand your work style')}
-            {step === 'profile' && 'Tell us about yourself so we can match you better'}
-          </p>
+          <h1 className="text-2xl font-semibold text-txt-primary tracking-tight">{titles[step]}</h1>
+          <p className="mt-1 text-sm text-txt-secondary">{subtitles[step]}</p>
         </div>
 
+        {error && <div className="mb-4 rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
+
+        {/* ─── Step 1: Email ─── */}
         {step === 'email' && (
           <div className="card p-6 space-y-4">
-            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
-
             <button onClick={handleGoogleSignup} disabled={loading}
               className="btn-secondary w-full justify-center gap-3 py-2.5">
               <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -244,10 +238,9 @@ function SignupContent() {
           </div>
         )}
 
+        {/* ─── Step 2: Password ─── */}
         {step === 'password' && (
           <div className="card p-6 space-y-4">
-            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
-
             <div className="rounded-lg bg-bg-subtle px-3.5 py-2.5 text-sm text-txt-secondary">
               <span className="font-medium text-txt-primary">{email}</span>
             </div>
@@ -303,7 +296,7 @@ function SignupContent() {
               </div>
 
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setStep('email')} className="btn-secondary flex-1">Back</button>
+                <button type="button" onClick={() => go('email')} className="btn-secondary flex-1">Back</button>
                 <button type="submit" disabled={loading} className="btn-primary flex-1">
                   {loading ? 'Creating account...' : 'Continue'}
                 </button>
@@ -312,49 +305,32 @@ function SignupContent() {
           </div>
         )}
 
+        {/* ─── Step 3: Role ─── */}
         {step === 'role' && (
           <div className="card p-6 space-y-6">
-            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
-
             <div>
               <label className="label">I am a</label>
               <div className="grid grid-cols-2 gap-3">
-                <button type="button" onClick={() => setRole('FREELANCER')}
-                  className={`rounded-xl border-2 px-4 py-6 text-center transition-all ${
-                    role === 'FREELANCER'
-                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400'
-                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
-                  }`}>
+                <button type="button" onClick={() => { setRole('FREELANCER'); go('entity'); }}
+                  className="rounded-xl border-2 border-border-subtle bg-surface px-4 py-6 text-center transition-all hover:border-border-strong text-txt-secondary">
                   <UserIcon className="mx-auto h-8 w-8 mb-2" />
                   <div className="text-sm font-semibold">Freelancer</div>
                   <div className="mt-1 text-xs text-txt-tertiary">Find work & get hired</div>
                 </button>
-                <button type="button" onClick={() => setRole('CLIENT')}
-                  className={`rounded-xl border-2 px-4 py-6 text-center transition-all ${
-                    role === 'CLIENT'
-                      ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400'
-                      : 'border-border-subtle bg-surface text-txt-secondary hover:border-border-strong'
-                  }`}>
+                <button type="button" onClick={() => { setRole('CLIENT'); go('entity'); }}
+                  className="rounded-xl border-2 border-border-subtle bg-surface px-4 py-6 text-center transition-all hover:border-border-strong text-txt-secondary">
                   <BuildingIcon className="mx-auto h-8 w-8 mb-2" />
                   <div className="text-sm font-semibold">Client</div>
                   <div className="mt-1 text-xs text-txt-tertiary">Post jobs & hire</div>
                 </button>
               </div>
             </div>
-
-            <div className="flex gap-3 pt-2">
-              {!isGoogleProvider && (
-                <button onClick={() => setStep('password')} className="btn-secondary flex-1">Back</button>
-              )}
-              <button onClick={() => setStep('entity')} className="btn-primary flex-1">Continue</button>
-            </div>
           </div>
         )}
 
+        {/* ─── Step 4: Entity ─── */}
         {step === 'entity' && (
           <div className="card p-6 space-y-6">
-            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
-
             <div>
               <label className="label">I am a</label>
               <div className="grid grid-cols-2 gap-3">
@@ -428,31 +404,15 @@ function SignupContent() {
             )}
 
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setStep('role')} className="btn-secondary flex-1">Back</button>
-              <button onClick={() => setStep('profile')} className="btn-primary flex-1">Continue</button>
+              <button onClick={() => go('role')} className="btn-secondary flex-1">Back</button>
+              <button onClick={() => go('profile')} className="btn-primary flex-1">Continue</button>
             </div>
           </div>
         )}
 
+        {/* ─── Step 5: Profile ─── */}
         {step === 'profile' && (
           <div className="card p-6 space-y-6">
-            {error && <div className="rounded-lg bg-danger-50 px-3.5 py-2.5 text-sm text-danger-600 border border-danger-500/20">{error}</div>}
-
-            {isGoogleProvider && user && (
-              <div className="flex items-center gap-3 rounded-lg bg-accent-50 px-4 py-3 border border-accent-200">
-                <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                </svg>
-                <div className="text-sm">
-                  <span className="font-medium text-accent-700">Signed in via Google</span>
-                  <span className="text-txt-secondary ml-1">— {user.email}</span>
-                </div>
-              </div>
-            )}
-
             <div className="rounded-lg bg-accent-50/50 border border-accent-200/50 px-4 py-3">
               <p className="text-xs text-txt-secondary">
                 <span className="font-medium text-accent-700">{role === 'CLIENT' ? 'Client' : 'Freelancer'}</span>
@@ -565,7 +525,7 @@ function SignupContent() {
             )}
 
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setStep('entity')} className="btn-secondary flex-1">Back</button>
+              <button onClick={() => go('entity')} className="btn-secondary flex-1">Back</button>
               <button onClick={handleProfileSubmit} disabled={loading} className="btn-primary flex-1">
                 {loading ? 'Saving...' : 'Complete setup'}
               </button>
