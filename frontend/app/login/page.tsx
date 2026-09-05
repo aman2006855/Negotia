@@ -10,8 +10,8 @@ import { BriefcaseIcon } from '@/components/icons';
 export default function LoginPage() {
   const router = useRouter();
   const setUser = useBoard((s) => s.setUser);
-  const [email, setEmail] = useState('freelancer@demo.dev');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,32 +45,6 @@ export default function LoginPage() {
       await api.googleLogin();
     } catch {
       setError('Google sign-in failed');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function quickLogin(role: string) {
-    setLoading(true);
-    try {
-      const emailMap: Record<string, string> = {
-        client: 'client@demo.dev',
-        freelancer: 'freelancer@demo.dev',
-        jordan: 'jordan@demo.dev',
-      };
-      const me = await api.login(emailMap[role], 'password123');
-      setUser(me.user);
-      if (!me.user) {
-        setError('Login failed');
-        return;
-      }
-      if (!me.user.profileCompleted) {
-        router.push('/signup?step=role');
-      } else {
-        router.push('/jobs');
-      }
-    } catch {
-      setError('Login failed');
     } finally {
       setLoading(false);
     }
@@ -119,35 +93,20 @@ export default function LoginPage() {
               <label className="label">Email</label>
               <input
                 type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                className="input-field" required
+                className="input-field" required placeholder="you@example.com"
               />
             </div>
             <div>
               <label className="label">Password</label>
               <input
                 type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                className="input-field" required
+                className="input-field" required placeholder="Your password"
               />
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
-        </div>
-
-        <div className="mt-6">
-          <p className="mb-3 text-center text-xs text-txt-tertiary">Quick login (demo accounts)</p>
-          <div className="grid grid-cols-3 gap-2">
-            <button onClick={() => quickLogin('client')} className="btn-secondary text-xs py-2">
-              Client
-            </button>
-            <button onClick={() => quickLogin('freelancer')} className="btn-secondary text-xs py-2">
-              Sam
-            </button>
-            <button onClick={() => quickLogin('jordan')} className="btn-secondary text-xs py-2">
-              Jordan
-            </button>
-          </div>
         </div>
 
         <p className="mt-6 text-center text-sm text-txt-secondary">

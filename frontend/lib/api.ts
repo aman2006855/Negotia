@@ -1,8 +1,5 @@
-import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats, ChatMessage, WorkspaceMessage } from './types';
-import { mockApi } from './mock';
+import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats } from './types';
 import { supabase, signInWithEmail, signUpWithEmail, signInWithGoogle as sbGoogle, getSession } from './supabase';
-
-const USE_MOCK = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_USE_MOCK === '1';
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -41,19 +38,16 @@ function mapMilestone(m: any) {
 
 export const api = {
   login: async (email: string, password: string): Promise<Me> => {
-    if (USE_MOCK) return mockApi.login(email, password);
     const result = await signInWithEmail(email, password);
     setToken(result.session.access_token);
     return api.me();
   },
 
   googleLogin: async () => {
-    if (USE_MOCK) return mockApi.googleLogin();
     return sbGoogle();
   },
 
   signup: async (d: { name: string; email: string; password: string }): Promise<Me> => {
-    if (USE_MOCK) return mockApi.signup(d);
     const result = await signUpWithEmail(d.email, d.password, d.name);
     if (result.session) setToken(result.session.access_token);
     try { return await api.me(); } catch {
@@ -62,7 +56,6 @@ export const api = {
   },
 
   updateProfile: async (data: Partial<User>): Promise<Me> => {
-    if (USE_MOCK) return mockApi.updateProfile(data);
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const updateData: any = {
@@ -79,7 +72,6 @@ export const api = {
   },
 
   me: async (): Promise<Me> => {
-    if (USE_MOCK) return mockApi.me();
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase.from('users').select('*').eq('id', session.user.id).single();
@@ -96,20 +88,12 @@ export const api = {
   },
 
   feed: async (): Promise<FeedJob[]> => {
-    if (USE_MOCK) {
-      const r = await mockApi.feed();
-      return Array.isArray(r) ? r : (r as any).jobs ?? [];
-    }
     const { data, error } = await supabase.from('freelancer_feed').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     return (data ?? []).map(mapFeedJob);
   },
 
   myJobs: async (): Promise<FeedJob[]> => {
-    if (USE_MOCK) {
-      const r = await mockApi.myJobs();
-      return Array.isArray(r) ? r : (r as any).jobs ?? [];
-    }
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase.from('jobs').select('*, users!jobs_client_id_fkey(name)').eq('client_id', session.user.id).order('created_at', { ascending: false });
@@ -118,7 +102,6 @@ export const api = {
   },
 
   joinNegotiation: async (): Promise<NegotiationState> => {
-    if (USE_MOCK) return mockApi.joinNegotiation();
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data: neg } = await supabase
@@ -143,7 +126,6 @@ export const api = {
   },
 
   createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string }) => {
-    if (USE_MOCK) return mockApi.createJob(d);
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase.from('jobs').insert({
@@ -155,10 +137,6 @@ export const api = {
   },
 
   getProjects: async (): Promise<Project[]> => {
-    if (USE_MOCK) {
-      const r = await mockApi.getProjects();
-      return Array.isArray(r) ? r : (r as any).projects ?? [];
-    }
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase
@@ -177,7 +155,6 @@ export const api = {
   },
 
   getProject: async (projectId: string): Promise<{ project: Project }> => {
-    if (USE_MOCK) return mockApi.getProject(projectId);
     const { data: p, error } = await supabase
       .from('projects').select('*, milestones(*), workspace_messages(*), users!projects_client_id_fkey(name)')
       .eq('id', projectId).single();
@@ -205,21 +182,18 @@ export const api = {
   },
 
   updateProjectProgress: async (projectId: string, progress: number): Promise<{ project: Project }> => {
-    if (USE_MOCK) { await mockApi.updateProjectProgress(projectId, progress); return mockApi.getProject(projectId); }
     const { error } = await supabase.from('projects').update({ progress }).eq('id', projectId);
     if (error) throw error;
     return api.getProject(projectId);
   },
 
   updateProjectStatus: async (projectId: string, status: string): Promise<{ project: Project }> => {
-    if (USE_MOCK) { await mockApi.updateProjectStatus(projectId, status as Project['status']); return mockApi.getProject(projectId); }
     const { error } = await supabase.from('projects').update({ status }).eq('id', projectId);
     if (error) throw error;
     return api.getProject(projectId);
   },
 
   addMilestone: async (projectId: string, title: string): Promise<{ project: Project }> => {
-    if (USE_MOCK) { await mockApi.addMilestone(projectId, title); return mockApi.getProject(projectId); }
     const { data: existing } = await supabase.from('milestones').select('sort_order').eq('project_id', projectId).order('sort_order', { ascending: false }).limit(1).maybeSingle();
     const nextOrder = ((existing as any)?.sort_order ?? -1) + 1;
     const { error } = await supabase.from('milestones').insert({ project_id: projectId, title, sort_order: nextOrder });
@@ -228,7 +202,6 @@ export const api = {
   },
 
   toggleMilestone: async (projectId: string, milestoneId: string): Promise<{ project: Project }> => {
-    if (USE_MOCK) { await mockApi.toggleMilestone(projectId, milestoneId); return mockApi.getProject(projectId); }
     const { data: m } = await supabase.from('milestones').select('status').eq('id', milestoneId).single();
     const next = (m as any)?.status === 'DONE' ? 'TODO' : 'DONE';
     const { error } = await supabase.from('milestones').update({ status: next }).eq('id', milestoneId);
@@ -237,7 +210,6 @@ export const api = {
   },
 
   sendWorkspaceMessage: async (projectId: string, body: string): Promise<{ project: Project }> => {
-    if (USE_MOCK) { await mockApi.sendWorkspaceMessage(projectId, body); return mockApi.getProject(projectId); }
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { error } = await supabase.from('workspace_messages').insert({ project_id: projectId, sender_id: session.user.id, body });
@@ -246,10 +218,6 @@ export const api = {
   },
 
   getReviews: async (freelancerId?: string): Promise<Review[]> => {
-    if (USE_MOCK) {
-      const r = await mockApi.getReviews(freelancerId);
-      return Array.isArray(r) ? r : (r as any).reviews ?? [];
-    }
     let q = supabase.from('reviews').select('*').order('created_at', { ascending: false });
     if (freelancerId) q = q.eq('freelancer_id', freelancerId);
     const { data, error } = await q;
@@ -267,7 +235,6 @@ export const api = {
   },
 
   submitReview: async (d: { projectId: string; rating: number; comment: string }) => {
-    if (USE_MOCK) return mockApi.submitReview(d);
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data: project } = await supabase.from('projects').select('job_id, client_id, freelancer_id').eq('id', d.projectId).single();
@@ -281,7 +248,6 @@ export const api = {
   },
 
   getDashboardStats: async (): Promise<DashboardStats> => {
-    if (USE_MOCK) return mockApi.getDashboardStats();
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data } = await supabase.from('user_dashboard_stats').select('*').eq('user_id', session.user.id).maybeSingle();
@@ -295,14 +261,12 @@ export const api = {
   },
 
   getUserProfile: async (userId: string): Promise<{ user: User }> => {
-    if (USE_MOCK) return mockApi.getUserProfile(userId);
     const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
     if (error) throw error;
     return { user: mapUser(data) };
   },
 
   getPublicClientProfile: async (clientId: string) => {
-    if (USE_MOCK) return mockApi.getPublicClientProfile(clientId);
     const { data: user, error: uErr } = await supabase.from('users').select('*').eq('id', clientId).single();
     if (uErr) throw uErr;
     const { data: allJobs } = await supabase.from('jobs').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
