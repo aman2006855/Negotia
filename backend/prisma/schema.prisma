@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  FREELANCER
+}
+
+enum JobStatus {
+  OPEN
+  OCCUPIED
+  CLOSED
+}
+
+enum NegotiationOutcome {
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  role          Role     @default(FREELANCER)
+  isNegotiating Boolean  @default(false)
+  activeJobId   String?  @unique
+  activeJob     Job?     @relation("ActiveNegotiation", fields: [activeJobId], references: [id])
+  jobsPosted    Job[]    @relation("JobPoster")
+  negotiationsAsFreelancer Negotiation[] @relation("FreelancerSide")
+  negotiationsAsClient     Negotiation[] @relation("ClientSide")
+  messagesSent         Message[]
+  agreementsSigned     SignedAgreement[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("users")
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  clientId      String
+  client        User      @relation("JobPoster", fields: [clientId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  budgetCents   Int
+  agreementText String
+  status        JobStatus @default(OPEN)
+  lockedByFreelancerId String?  @unique
+  lockedByFreelancer   User?    @relation("ActiveNegotiation")
+  lockedAt             DateTime?
+  closedAt             DateTime?
+  negotiations Negotiation[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([status])
+  @@index([status, createdAt])
+  @@map("jobs")
+}
+
+model Negotiation {
+  id             String               @id @default(cuid())
+  jobId          String
+  job            Job                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         User                 @relation("ClientSide", fields: [clientId], references: [id])
+  freelancerId   String
+  freelancer     User                 @relation("FreelancerSide", fields: [freelancerId], references: [id])
+  outcome        NegotiationOutcome?
+  createdAt      DateTime             @default(now())
+  lastActivityAt DateTime             @default(now())
+  abandonedAt    DateTime?
+  closedAt       DateTime?
+  messages       Message[]
+  signedAgreement SignedAgreement?
+  @@index([jobId, outcome])
+  @@index([freelancerId, outcome])
+  @@index([outcome, lastActivityAt])
+  @@map("negotiations")
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  negotiationId String
+  negotiation   Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User        @relation(fields: [senderId], references: [id])
+  body          String
+  createdAt     DateTime    @default(now())
+  @@index([negotiationId, createdAt])
+  @@map("messages")
+}
+
+model SignedAgreement {
+  id            String      @id @default(cuid())
+  negotiationId String      @unique
+  negotiation   Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Cascade)
+  agreementText String
+  signedById    String
+  signedBy      User        @relation(fields: [signedById], references: [id])
+  signedAt      DateTime    @default(now())
+  @@map("signed_agreements")
+}
