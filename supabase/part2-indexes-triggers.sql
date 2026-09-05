@@ -31,12 +31,16 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists set_updated_at on users;
 create trigger set_updated_at before update on users
   for each row execute function update_updated_at();
+drop trigger if exists set_updated_at on jobs;
 create trigger set_updated_at before update on jobs
   for each row execute function update_updated_at();
+drop trigger if exists set_updated_at on projects;
 create trigger set_updated_at before update on projects
   for each row execute function update_updated_at();
+drop trigger if exists set_updated_at on milestones;
 create trigger set_updated_at before update on milestones
   for each row execute function update_updated_at();
 
@@ -55,6 +59,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists on_review_insert on reviews;
 create trigger on_review_insert
   after insert on reviews
   for each row execute function update_user_stats_on_review();
@@ -84,6 +89,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists on_job_status_change on jobs;
 create trigger on_job_status_change
   after insert or update or delete on jobs
   for each row execute function update_user_active_jobs();
@@ -102,6 +108,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists on_project_complete on projects;
 create trigger on_project_complete
   after update on projects
   for each row execute function update_user_earnings_on_complete();

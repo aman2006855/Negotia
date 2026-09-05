@@ -13,25 +13,38 @@ alter table milestones enable row level security;
 alter table workspace_messages enable row level security;
 alter table reviews enable row level security;
 
+drop policy if exists "Users: Public read" on users;
 create policy "Users: Public read" on users for select using (true);
+drop policy if exists "Users: Update own profile" on users;
 create policy "Users: Update own profile" on users for update using (auth.uid() = id) with check (auth.uid() = id);
+drop policy if exists "Users: Insert own record" on users;
 create policy "Users: Insert own record" on users for insert with check (auth.uid() = id);
 
+drop policy if exists "Jobs: Public read for open jobs" on jobs;
 create policy "Jobs: Public read for open jobs" on jobs for select using (status = 'OPEN');
+drop policy if exists "Jobs: Client reads own jobs" on jobs;
 create policy "Jobs: Client reads own jobs" on jobs for select using (client_id = auth.uid());
+drop policy if exists "Jobs: Freelancer reads locked jobs" on jobs;
 create policy "Jobs: Freelancer reads locked jobs" on jobs for select using (freelancer_id = auth.uid());
+drop policy if exists "Jobs: Client creates jobs" on jobs;
 create policy "Jobs: Client creates jobs" on jobs for insert with check (client_id = auth.uid());
+drop policy if exists "Jobs: Client updates own jobs" on jobs;
 create policy "Jobs: Client updates own jobs" on jobs for update using (client_id = auth.uid());
+drop policy if exists "Jobs: Freelancer can lock open jobs" on jobs;
 create policy "Jobs: Freelancer can lock open jobs" on jobs for update
   using (status = 'OPEN' and freelancer_id is null)
   with check (freelancer_id = auth.uid());
 
+drop policy if exists "Negotiations: Read own negotiations" on negotiations;
 create policy "Negotiations: Read own negotiations" on negotiations for select
   using (client_id = auth.uid() or freelancer_id = auth.uid());
+drop policy if exists "Negotiations: Insert via service" on negotiations;
 create policy "Negotiations: Insert via service" on negotiations for insert with check (true);
+drop policy if exists "Negotiations: Update own negotiations" on negotiations;
 create policy "Negotiations: Update own negotiations" on negotiations for update
   using (client_id = auth.uid() or freelancer_id = auth.uid());
 
+drop policy if exists "Negotiation Messages: Read own" on negotiation_messages;
 create policy "Negotiation Messages: Read own" on negotiation_messages for select
   using (
     exists (
@@ -40,6 +53,7 @@ create policy "Negotiation Messages: Read own" on negotiation_messages for selec
       and (negotiations.client_id = auth.uid() or negotiations.freelancer_id = auth.uid())
     )
   );
+drop policy if exists "Negotiation Messages: Insert own" on negotiation_messages;
 create policy "Negotiation Messages: Insert own" on negotiation_messages for insert
   with check (
     sender_id = auth.uid() and
@@ -51,12 +65,16 @@ create policy "Negotiation Messages: Insert own" on negotiation_messages for ins
     )
   );
 
+drop policy if exists "Projects: Read own projects" on projects;
 create policy "Projects: Read own projects" on projects for select
   using (client_id = auth.uid() or freelancer_id = auth.uid());
+drop policy if exists "Projects: Insert via service" on projects;
 create policy "Projects: Insert via service" on projects for insert with check (true);
+drop policy if exists "Projects: Update own projects" on projects;
 create policy "Projects: Update own projects" on projects for update
   using (client_id = auth.uid() or freelancer_id = auth.uid());
 
+drop policy if exists "Milestones: Read own" on milestones;
 create policy "Milestones: Read own" on milestones for select
   using (
     exists (
@@ -65,6 +83,7 @@ create policy "Milestones: Read own" on milestones for select
       and (projects.client_id = auth.uid() or projects.freelancer_id = auth.uid())
     )
   );
+drop policy if exists "Milestones: Freelancer manages own" on milestones;
 create policy "Milestones: Freelancer manages own" on milestones for all
   using (
     exists (
@@ -73,6 +92,7 @@ create policy "Milestones: Freelancer manages own" on milestones for all
       and projects.freelancer_id = auth.uid()
     )
   );
+drop policy if exists "Milestones: Client reads own" on milestones;
 create policy "Milestones: Client reads own" on milestones for select
   using (
     exists (
@@ -82,6 +102,7 @@ create policy "Milestones: Client reads own" on milestones for select
     )
   );
 
+drop policy if exists "Workspace Messages: Read own" on workspace_messages;
 create policy "Workspace Messages: Read own" on workspace_messages for select
   using (
     exists (
@@ -90,6 +111,7 @@ create policy "Workspace Messages: Read own" on workspace_messages for select
       and (projects.client_id = auth.uid() or projects.freelancer_id = auth.uid())
     )
   );
+drop policy if exists "Workspace Messages: Insert own" on workspace_messages;
 create policy "Workspace Messages: Insert own" on workspace_messages for insert
   with check (
     sender_id = auth.uid() and
@@ -100,7 +122,9 @@ create policy "Workspace Messages: Insert own" on workspace_messages for insert
     )
   );
 
+drop policy if exists "Reviews: Public read" on reviews;
 create policy "Reviews: Public read" on reviews for select using (true);
+drop policy if exists "Reviews: Client inserts own" on reviews;
 create policy "Reviews: Client inserts own" on reviews for insert
   with check (
     client_id = auth.uid() and
@@ -111,6 +135,7 @@ create policy "Reviews: Client inserts own" on reviews for insert
       and projects.status = 'COMPLETED'
     )
   );
+drop policy if exists "Reviews: Client updates own" on reviews;
 create policy "Reviews: Client updates own" on reviews for update using (client_id = auth.uid());
 
 -- Part 3 done. Now run Part 4.
