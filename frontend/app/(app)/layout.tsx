@@ -29,11 +29,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <div className="h-screen overflow-hidden bg-canvas flex flex-col">
       <TopHeader />
-      <div className="pt-12">
+      <div className="flex-1 flex flex-col overflow-hidden pt-12">
         <TopBanner />
-        <main className="pb-20">{children}</main>
+        <main className="flex-1 overflow-y-auto flex flex-col">{children}</main>
       </div>
       <BottomNav />
       <Toast />

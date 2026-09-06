@@ -50,8 +50,8 @@ export default function MyPostingsPage() {
   const firstName = (user?.fullName || user?.name || '').split(' ')[0] || 'there';
 
   return (
-    <div className="page-container">
-      <div className="mb-5 flex items-center justify-between">
+    <div className="h-full flex flex-col overflow-hidden px-4 pt-4">
+      <div className="shrink-0 mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-txt-primary tracking-tight">
             Hey, {firstName} 👋
@@ -67,11 +67,11 @@ export default function MyPostingsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div className="flex-1 flex items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
         </div>
       ) : jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="flex-1 flex flex-col items-center justify-center text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-inset mb-4">
             <svg className="h-8 w-8 text-txt-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />
@@ -87,7 +87,7 @@ export default function MyPostingsPage() {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto -mx-4 px-4 pb-4 space-y-3">
           {jobs.map((job) => (
             <div
               key={job.id}
