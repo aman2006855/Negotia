@@ -8,11 +8,13 @@ export function AgreementModal({
   jobTitle,
   onConfirm,
   onBack,
+  loading = false,
 }: {
   agreementText: string;
   jobTitle: string;
   onConfirm: () => void;
   onBack: () => void;
+  loading?: boolean;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -66,11 +68,11 @@ export function AgreementModal({
             </button>
             <button
               onClick={onConfirm}
-              disabled={!agreed}
+              disabled={!agreed || loading}
               className="flex items-center gap-1.5 rounded-lg bg-success-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-success-600/90 shadow-soft disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <CheckIcon className="h-4 w-4" />
-              Sign &amp; Confirm
+              {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <CheckIcon className="h-4 w-4" />}
+              {loading ? 'Signing…' : 'Sign & Confirm'}
             </button>
           </div>
         </div>

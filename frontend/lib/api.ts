@@ -1,4 +1,4 @@
-import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats } from './types';
+import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats, ChatMessage } from './types';
 import { supabase, signInWithEmail, signUpWithEmail, signInWithGoogle as sbGoogle, getSession } from './supabase';
 
 function mapUser(u: any): User {
@@ -196,6 +196,64 @@ export const api = {
       job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id },
       messages: (msgs ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, senderName: userMap[m.sender_id] ?? 'User', body: m.body, createdAt: m.created_at })),
     };
+  },
+
+  sendMessage: async (negotiationId: string, body: string) => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data, error } = await supabase
+      .from('negotiation_messages')
+      .insert({ negotiation_id: negotiationId, sender_id: session.user.id, body })
+      .select('id, sender_id, body, created_at')
+      .single();
+    if (error) throw error;
+    const m = data as any;
+    return { id: m.id, senderId: m.sender_id, senderName: session.user.user_metadata?.name ?? 'User', body: m.body, createdAt: m.created_at };
+  },
+
+  subscribeToMessages: (negotiationId: string, onMessage: (msg: ChatMessage) => void) => {
+    const channel = supabase
+      .channel(`neg:${negotiationId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'negotiation_messages',
+        filter: `negotiation_id=eq.${negotiationId}`,
+      }, async (payload) => {
+        const m = payload.new as any;
+        const { data: user } = await supabase.from('users').select('name').eq('id', m.sender_id).single();
+        onMessage({
+          id: m.id,
+          senderId: m.sender_id,
+          senderName: (user as any)?.name ?? 'User',
+          body: m.body,
+          createdAt: m.created_at,
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  },
+
+  declineNegotiation: async (negotiationId: string) => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data, error } = await supabase.rpc('decline_negotiation', {
+      p_negotiation_id: negotiationId,
+      p_user_id: session.user.id,
+    });
+    if (error) throw error;
+    return data as { ok: boolean; error?: string };
+  },
+
+  acceptNegotiation: async (negotiationId: string) => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data, error } = await supabase.rpc('accept_negotiation', {
+      p_negotiation_id: negotiationId,
+      p_user_id: session.user.id,
+    });
+    if (error) throw error;
+    return data as { ok: boolean; project_id?: string; error?: string };
   },
 
   createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string; category: string }) => {
