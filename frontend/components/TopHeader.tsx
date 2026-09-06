@@ -40,14 +40,19 @@ export function TopHeader() {
           </button>
 
           {/* User Avatar */}
-          {user && (
+          {user?.name || user?.avatar ? (
             <Link href="/profile" className="flex items-center gap-2">
-              <span className="text-xs text-txt-secondary hidden sm:inline">{user.name}</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-50 text-xs font-bold text-accent-700 dark:bg-accent-50/20 dark:text-accent-400">
-                {user.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-              </span>
+              <span className="text-xs text-txt-secondary hidden sm:inline">{user.fullName || user.name}</span>
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.fullName || user.name || 'Profile'}
+                  className="h-7 w-7 rounded-full object-cover ring-2 ring-surface dark:ring-surface" />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-50 text-[11px] font-bold text-accent-700 dark:bg-accent-50/20 dark:text-accent-400">
+                  {(user.fullName || user.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                </span>
+              )}
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </header>
