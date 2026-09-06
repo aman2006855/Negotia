@@ -1,4 +1,4 @@
-import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats, ChatMessage } from './types';
+import type { FeedJob, Me, NegotiationState, User, Project, Review, DashboardStats, ChatMessage, MarketListing, LaunchRating, SellerStats } from './types';
 import { supabase, signInWithEmail, signUpWithEmail, signInWithGoogle as sbGoogle, getSession } from './supabase';
 
 function mapUser(u: any): User {
@@ -35,6 +35,33 @@ function mapFeedJob(j: any): FeedJob {
 
 function mapMilestone(m: any) {
   return { id: m.id, title: m.title, status: m.status, sortOrder: m.sort_order ?? 0, createdAt: m.created_at ?? new Date().toISOString() };
+}
+
+function mapListing(row: any): MarketListing {
+  const seller = row.seller ?? row.users ?? {};
+  return {
+    id: row.id,
+    sellerId: row.seller_id,
+    sellerName: seller.name ?? row.seller_name ?? 'Seller',
+    sellerAvatar: seller.avatar_url ?? row.seller_avatar,
+    sellerUsername: seller.username ?? row.seller_username,
+    kind: row.kind,
+    title: row.title,
+    category: row.category,
+    description: row.description,
+    techStack: Array.isArray(row.tech_stack) ? row.tech_stack : [],
+    previewUrl: row.preview_url,
+    thumbnailUrl: row.thumbnail_url,
+    priceCents: row.price_cents,
+    currency: row.currency ?? 'USD',
+    pricingModel: row.pricing_model,
+    deliveryUrl: row.delivery_url,
+    status: row.status,
+    avgRating: Number(row.avg_rating ?? 0),
+    ratingCount: Number(row.rating_count ?? 0),
+    purchaseCount: Number(row.purchase_count ?? 0),
+    createdAt: row.created_at,
+  };
 }
 
 export const api = {
@@ -536,5 +563,158 @@ export const api = {
         createdAt: r.created_at,
       })),
     };
+  },
+
+  /* ─── Marketplace ─── */
+
+  marketFeed: async (kind?: 'SALE' | 'SHOWCASE', opts?: { category?: string; sort?: string; query?: string }): Promise<MarketListing[]> => {
+    let q = supabase.from('marketplace_feed').select('*');
+    if (kind) q = q.eq('kind', kind);
+    if (opts?.category && opts.category !== 'All') q = q.eq('category', opts.category);
+    if (opts?.query) q = q.or(`title.ilike.%${opts.query}%,description.ilike.%${opts.query}%`);
+    if (opts?.sort === 'budget-high') q = q.order('price_cents', { ascending: false });
+    else if (opts?.sort === 'popular') q = q.order('purchase_count', { ascending: false });
+    else q = q.order('created_at', { ascending: false });
+    const { data, error } = await q;
+    if (error) throw error;
+    return (data ?? []).map(mapListing);
+  },
+
+  getListing: async (id: string): Promise<MarketListing> => {
+    const { data, error } = await supabase.from('marketplace_feed').select('*').eq('id', id).single();
+    if (error) throw error;
+    return mapListing(data);
+  },
+
+  createListing: async (input: {
+    kind: 'SALE' | 'SHOWCASE'; title: string; category: string; description: string;
+    techStack?: string[]; previewUrl?: string; thumbnailUrl?: string;
+    priceCents?: number; currency?: string; pricingModel?: string; deliveryUrl?: string;
+  }): Promise<MarketListing> => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data, error } = await supabase.from('market_listings').insert({
+      seller_id: session.user.id, kind: input.kind, title: input.title,
+      category: input.category, description: input.description,
+      tech_stack: input.techStack ?? [], preview_url: input.previewUrl || null,
+      thumbnail_url: input.thumbnailUrl || null, price_cents: input.priceCents || null,
+      currency: input.currency ?? 'USD', pricing_model: input.pricingModel ?? 'FIXED',
+      delivery_url: input.deliveryUrl || null,
+    }).select().single();
+    if (error) throw error;
+    return mapListing(data);
+  },
+
+  updateListing: async (id: string, patch: Partial<{
+    title: string; category: string; description: string; techStack: string[];
+    previewUrl: string; thumbnailUrl: string; priceCents: number; currency: string;
+    pricingModel: string; deliveryUrl: string; status: string;
+  }>): Promise<void> => {
+    const dbPatch: any = {};
+    if (patch.title !== undefined) dbPatch.title = patch.title;
+    if (patch.category !== undefined) dbPatch.category = patch.category;
+    if (patch.description !== undefined) dbPatch.description = patch.description;
+    if (patch.techStack !== undefined) dbPatch.tech_stack = patch.techStack;
+    if (patch.previewUrl !== undefined) dbPatch.preview_url = patch.previewUrl || null;
+    if (patch.thumbnailUrl !== undefined) dbPatch.thumbnail_url = patch.thumbnailUrl || null;
+    if (patch.priceCents !== undefined) dbPatch.price_cents = patch.priceCents;
+    if (patch.currency !== undefined) dbPatch.currency = patch.currency;
+    if (patch.pricingModel !== undefined) dbPatch.pricing_model = patch.pricingModel;
+    if (patch.deliveryUrl !== undefined) dbPatch.delivery_url = patch.deliveryUrl || null;
+    if (patch.status !== undefined) dbPatch.status = patch.status;
+    dbPatch.updated_at = new Date().toISOString();
+    const { error } = await supabase.from('market_listings').update(dbPatch).eq('id', id);
+    if (error) throw error;
+  },
+
+  deleteListing: async (id: string): Promise<void> => {
+    const { error } = await supabase.from('market_listings').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  purchaseListing: async (id: string): Promise<{ deliveryUrl: string }> => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { error } = await supabase.from('marketplace_purchases').insert({ listing_id: id, buyer_id: session.user.id });
+    if (error && error.code !== '23505') throw error;
+    const { data: listing, error: lErr } = await supabase.from('market_listings').select('delivery_url').eq('id', id).single();
+    if (lErr) throw lErr;
+    return { deliveryUrl: listing.delivery_url ?? '' };
+  },
+
+  myPurchases: async (): Promise<MarketListing[]> => {
+    const session = await getSession();
+    if (!session) return [];
+    const { data: purchases, error: pErr } = await supabase.from('marketplace_purchases').select('listing_id').eq('buyer_id', session.user.id);
+    if (pErr) throw pErr;
+    const ids = (purchases ?? []).map((p: any) => p.listing_id);
+    if (ids.length === 0) return [];
+    const { data, error } = await supabase.from('marketplace_feed').select('*').in('id', ids);
+    if (error) throw error;
+    return (data ?? []).map(mapListing);
+  },
+
+  myListings: async (): Promise<MarketListing[]> => {
+    const session = await getSession();
+    if (!session) return [];
+    const { data, error } = await supabase.from('marketplace_feed').select('*').eq('seller_id', session.user.id).order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map(mapListing);
+  },
+
+  sellerStats: async (): Promise<SellerStats> => {
+    const session = await getSession();
+    if (!session) return { totalListings: 0, saleListings: 0, showcaseListings: 0, totalPurchases: 0, totalRevenueCents: 0, avgRating: 0, ratingCount: 0 };
+    const { data: listings } = await supabase.from('market_listings').select('kind, price_cents, id').eq('seller_id', session.user.id);
+    const all = listings ?? [];
+    const listingIds = all.map((l: any) => l.id);
+    let totalPurchases = 0;
+    let totalRevenueCents = 0;
+    if (listingIds.length > 0) {
+      const { data: purchases } = await supabase.from('marketplace_purchases').select('listing_id').in('listing_id', listingIds);
+      totalPurchases = (purchases ?? []).length;
+      totalRevenueCents = all.reduce((sum: number, l: any) => sum + ((l.price_cents ?? 0) * ((purchases ?? []).filter((p: any) => p.listing_id === l.id).length)), 0);
+    }
+    const { data: ratings } = await supabase.from('launch_ratings').select('rating').in('listing_id', listingIds.length > 0 ? listingIds : ['00000000-0000-0000-0000-000000000000']);
+    const allRatings = (ratings ?? []).map((r: any) => r.rating);
+    return {
+      totalListings: all.length,
+      saleListings: all.filter((l: any) => l.kind === 'SALE').length,
+      showcaseListings: all.filter((l: any) => l.kind === 'SHOWCASE').length,
+      totalPurchases,
+      totalRevenueCents,
+      avgRating: allRatings.length > 0 ? allRatings.reduce((a: number, b: number) => a + b, 0) / allRatings.length : 0,
+      ratingCount: allRatings.length,
+    };
+  },
+
+  /* ─── Ratings / Reviews ─── */
+
+  rateLaunch: async (listingId: string, rating: number, review?: string): Promise<void> => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { error } = await supabase.from('launch_ratings').upsert(
+      { listing_id: listingId, rater_id: session.user.id, rating, review: review || null },
+      { onConflict: 'listing_id,rater_id' }
+    );
+    if (error) throw error;
+  },
+
+  getRatings: async (listingId: string): Promise<LaunchRating[]> => {
+    const { data, error } = await supabase
+      .from('launch_ratings').select('*, users!launch_ratings_rater_id_fkey(name)')
+      .eq('listing_id', listingId).order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r: any) => ({
+      id: r.id, listingId: r.listing_id, raterId: r.rater_id,
+      raterName: r.users?.name ?? 'User',
+      rating: r.rating, review: r.review, createdAt: r.created_at,
+    }));
+  },
+
+  leaderboard: async (limit: number = 20): Promise<MarketListing[]> => {
+    const { data, error } = await supabase.from('launch_leaderboard').select('*').limit(limit);
+    if (error) throw error;
+    return (data ?? []).map(mapListing);
   },
 };

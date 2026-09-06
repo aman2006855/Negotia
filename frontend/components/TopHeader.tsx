@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useBoard } from '@/lib/store';
-import { BriefcaseIcon } from './icons';
+import { BriefcaseIcon, StoreIcon } from './icons';
 
 export function TopHeader() {
   const user = useBoard((s) => s.user);
@@ -20,6 +20,13 @@ export function TopHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
+          {/* Marketplace Store Link */}
+          <Link href="/marketplace"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all duration-200"
+            aria-label="Marketplace Store">
+            <StoreIcon className="h-[18px] w-[18px]" />
+          </Link>
+
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}

@@ -42,3 +42,18 @@ export function formatBudget(cents: number, currency: string = 'USD') {
   const val = currency === 'INR' ? cents / 100 : cents / 100;
   return `${sym}${new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val)}`;
 }
+
+export const MARKET_CATEGORIES = [
+  'Web App / SaaS',
+  'Mobile App',
+  'Source Code / Library',
+  'Tool / Utility',
+  'UI Kit / Template',
+  'API / Backend',
+  'AI / ML Product',
+  'E-Commerce',
+  'Game / Interactive',
+  'Other',
+] as const;
+
+export type MarketCategory = (typeof MARKET_CATEGORIES)[number];

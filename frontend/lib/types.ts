@@ -161,3 +161,58 @@ export interface Me {
   user: User;
   activeJob: { jobId: string; negotiationId: string } | null;
 }
+
+export type ListingKind = 'SALE' | 'SHOWCASE';
+export type PricingModel = 'FIXED' | 'SUBSCRIPTION' | 'FREE';
+export type ListingStatus = 'ACTIVE' | 'HIDDEN';
+
+export interface MarketListing {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  sellerAvatar?: string;
+  sellerUsername?: string;
+  kind: ListingKind;
+  title: string;
+  category: string;
+  description: string;
+  techStack: string[];
+  previewUrl?: string;
+  thumbnailUrl?: string;
+  priceCents?: number;
+  currency: string;
+  pricingModel: PricingModel;
+  deliveryUrl?: string;
+  status: ListingStatus;
+  avgRating: number;
+  ratingCount: number;
+  purchaseCount: number;
+  createdAt: string;
+}
+
+export interface MarketPurchase {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  createdAt: string;
+}
+
+export interface LaunchRating {
+  id: string;
+  listingId: string;
+  raterId: string;
+  raterName: string;
+  rating: number;
+  review?: string;
+  createdAt: string;
+}
+
+export interface SellerStats {
+  totalListings: number;
+  saleListings: number;
+  showcaseListings: number;
+  totalPurchases: number;
+  totalRevenueCents: number;
+  avgRating: number;
+  ratingCount: number;
+}

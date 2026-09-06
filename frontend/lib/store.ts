@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FeedJob, Me, User, Project, Review, DashboardStats, NegotiationState, ThemeMode } from './types';
+import type { FeedJob, Me, User, Project, Review, DashboardStats, NegotiationState, ThemeMode, MarketListing, LaunchRating, SellerStats } from './types';
 
 interface AppState {
   user: User | null;
@@ -11,6 +11,10 @@ interface AppState {
   projects: Project[];
   reviews: Review[];
   dashboardStats: DashboardStats | null;
+  listings: MarketListing[];
+  launches: MarketListing[];
+  leaderboard: MarketListing[];
+  sellerStats: SellerStats | null;
   toast: string | null;
   sidebarOpen: boolean;
   theme: ThemeMode;
@@ -27,6 +31,10 @@ interface AppState {
   updateProject: (id: string, patch: Partial<Project>) => void;
   setReviews: (reviews: Review[]) => void;
   setDashboardStats: (stats: DashboardStats) => void;
+  setListings: (listings: MarketListing[]) => void;
+  setLaunches: (launches: MarketListing[]) => void;
+  setLeaderboard: (leaderboard: MarketListing[]) => void;
+  setSellerStats: (stats: SellerStats) => void;
   showToast: (message: string) => void;
   dismissToast: () => void;
   toggleSidebar: () => void;
@@ -58,6 +66,10 @@ export const useBoard = create<AppState>((set, get) => ({
   projects: [],
   reviews: [],
   dashboardStats: null,
+  listings: [],
+  launches: [],
+  leaderboard: [],
+  sellerStats: null,
   toast: null,
   sidebarOpen: false,
   theme: loadTheme(),
@@ -82,6 +94,10 @@ export const useBoard = create<AppState>((set, get) => ({
   })),
   setReviews: (reviews) => set({ reviews }),
   setDashboardStats: (stats) => set({ dashboardStats: stats }),
+  setListings: (listings) => set({ listings }),
+  setLaunches: (launches) => set({ launches }),
+  setLeaderboard: (leaderboard) => set({ leaderboard }),
+  setSellerStats: (stats) => set({ sellerStats: stats }),
   showToast: (message) => {
     clearTimeout(toastTimer);
     set({ toast: message });
@@ -116,6 +132,7 @@ export const useBoard = create<AppState>((set, get) => ({
     set({
       user: null, jobs: [], jobsLoaded: false, myActiveJobId: null, myNegotiationId: null,
       negotiation: null, projects: [], reviews: [], dashboardStats: null,
+      listings: [], launches: [], leaderboard: [], sellerStats: null,
     });
   },
 }));
