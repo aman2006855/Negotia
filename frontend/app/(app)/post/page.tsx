@@ -42,7 +42,7 @@ export default function PostPage() {
   }
 
   return (
-    <div className="pb-24 max-w-2xl mx-auto px-4 py-6">
+    <div className="pb-24 max-w-2xl mx-auto px-4 py-6 overflow-hidden">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
           <BriefcaseIcon className="h-5 w-5" />

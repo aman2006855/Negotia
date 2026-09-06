@@ -64,7 +64,7 @@ export default function JobsPage() {
     <div className="page-container">
       {/* ─── Personalized Welcome Header ─── */}
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-txt-primary tracking-tight">
+        <h1 className="text-2xl font-bold text-txt-primary tracking-tight break-words">
           Welcome back, {firstName} 👋
         </h1>
         <p className="text-sm text-txt-secondary mt-1">Find your next great project.</p>
@@ -92,8 +92,8 @@ export default function JobsPage() {
       </div>
 
       {/* ─── Filter Bar ─── */}
-      <div className="mt-4 mb-4 flex items-center justify-between">
-        <p className="text-xs text-txt-tertiary">
+      <div className="mt-4 mb-4 flex items-center justify-between gap-2">
+        <p className="text-xs text-txt-tertiary min-w-0 truncate">
           {filtered.length} {filtered.length === 1 ? 'job' : 'jobs'} available
           {activeCategory !== 'All' && ` in ${activeCategory}`}
         </p>

@@ -60,9 +60,9 @@ export default function WorkspacePage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-semibold text-txt-primary line-clamp-1">{project.title}</h3>
-                  <p className="mt-0.5 text-xs text-txt-secondary">{project.clientName} · {formatBudget(project.budgetCents)}</p>
+                  <p className="mt-0.5 text-xs text-txt-secondary truncate">{project.clientName} · {formatBudget(project.budgetCents)}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_BADGE[project.status] || 'badge-neutral'}`}>
                     {project.status.replace('_', ' ')}
                   </span>

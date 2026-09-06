@@ -51,9 +51,9 @@ export default function MyPostingsPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden px-4 pt-4">
-      <div className="shrink-0 mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-txt-primary tracking-tight">
+      <div className="shrink-0 mb-4 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-bold text-txt-primary tracking-tight break-words">
             Hey, {firstName} 👋
           </h1>
           <p className="text-sm text-txt-secondary mt-1">Manage your posted jobs.</p>
@@ -87,7 +87,7 @@ export default function MyPostingsPage() {
           </button>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto -mx-4 px-4 pb-4 space-y-3">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden -mx-4 px-4 pb-4 space-y-3">
           {jobs.map((job) => (
             <div
               key={job.id}
