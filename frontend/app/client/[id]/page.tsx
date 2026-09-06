@@ -6,11 +6,8 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { ArrowLeftIcon, StarIcon, BriefcaseIcon, DollarIcon, ClockIcon, ExternalLinkIcon, CheckIcon } from '@/components/icons';
+import { formatBudget } from '@/lib/constants';
 import type { FeedJob, Review, User } from '@/lib/types';
-
-function formatBudget(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(cents / 100);
-}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -126,7 +123,7 @@ export default function ClientProfilePage() {
                     <p className="text-xs text-txt-secondary line-clamp-1 mt-0.5">{job.description}</p>
                   </div>
                   <span className="shrink-0 rounded-md bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-50/20 dark:text-accent-400">
-                    {formatBudget(job.budgetCents)}
+                    {formatBudget(job.budgetCents, job.currency)}
                   </span>
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-[10px] text-txt-tertiary">
@@ -159,7 +156,7 @@ export default function ClientProfilePage() {
                     <p className="text-xs text-txt-secondary mt-0.5">with {job.freelancerName}</p>
                   </div>
                   <span className="shrink-0 rounded-md bg-inset px-2 py-0.5 text-xs font-medium text-txt-tertiary">
-                    {formatBudget(job.budgetCents)}
+                    {formatBudget(job.budgetCents, job.currency)}
                   </span>
                 </div>
               </div>

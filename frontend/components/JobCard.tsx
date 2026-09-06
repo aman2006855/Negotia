@@ -4,10 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useBoard } from '@/lib/store';
 import type { FeedJob } from '@/lib/types';
 import { LockIcon, ClockIcon, BellIcon } from './icons';
-
-function formatBudget(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(cents / 100);
-}
+import { formatBudget } from '@/lib/constants';
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -93,7 +90,7 @@ export function JobCard({ job }: { job: FeedJob }) {
               </button>
             )}
             <span className="rounded-md bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700 dark:bg-accent-50/20 dark:text-accent-400">
-              {formatBudget(job.budgetCents)}
+              {formatBudget(job.budgetCents, job.currency)}
             </span>
           </div>
         </div>

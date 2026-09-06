@@ -64,6 +64,7 @@ export interface FeedJob {
   agreementText?: string;
   freelancerId?: string;
   freelancerName?: string;
+  currency?: string;
 }
 
 export interface ChatMessage {
@@ -87,6 +88,7 @@ export interface NegotiationState {
     agreementText: string;
     clientName: string;
     clientId: string;
+    currency?: string;
   };
   messages: ChatMessage[];
 }

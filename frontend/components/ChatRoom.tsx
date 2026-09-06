@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import type { ChatMessage, NegotiationState } from '@/lib/types';
 import { SendIcon, CheckIcon, XIcon } from './icons';
+import { formatBudget } from '@/lib/constants';
 import { AgreementModal } from './AgreementModal';
 
 const QUICK_REPLIES = [
@@ -138,7 +139,7 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
             <div className="text-right shrink-0">
               <p className="text-[10px] text-txt-tertiary truncate max-w-[120px]">{state.job.title}</p>
               <p className="text-xs font-semibold text-accent-600">
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(state.job.budgetCents / 100)}
+                {formatBudget(state.job.budgetCents, state.job.currency)}
               </p>
             </div>
           </div>

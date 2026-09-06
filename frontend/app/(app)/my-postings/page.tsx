@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
+import { formatBudget } from '@/lib/constants';
 import type { FeedJob } from '@/lib/types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -13,10 +14,6 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED: 'bg-inset text-txt-tertiary border-border-subtle',
   CANCELLED: 'bg-danger-50 text-danger-600 border-danger-500/20',
 };
-
-function formatCents(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(cents / 100);
-}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -107,7 +104,7 @@ export default function MyPostingsPage() {
                 </span>
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-subtle">
-                <span className="text-sm font-bold text-accent-600">{formatCents(job.budgetCents)}</span>
+                <span className="text-sm font-bold text-accent-600">{formatBudget(job.budgetCents, job.currency)}</span>
                 <span className="text-[11px] text-txt-tertiary">{timeAgo(job.createdAt)}</span>
               </div>
               {job.status === 'OPEN' && (

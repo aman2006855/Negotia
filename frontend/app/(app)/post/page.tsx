@@ -11,7 +11,7 @@ import { CustomSelect } from '@/components/CustomSelect';
 export default function PostPage() {
   const router = useRouter();
   const showToast = useBoard((s) => s.showToast);
-  const [form, setForm] = useState({ title: '', description: '', budgetCents: '', agreementText: '', category: '' });
+  const [form, setForm] = useState({ title: '', description: '', budgetCents: '', agreementText: '', category: '', currency: 'USD' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,6 +30,7 @@ export default function PostPage() {
         budgetCents: Math.round(parseFloat(form.budgetCents) * 100),
         agreementText: form.agreementText,
         category: form.category,
+        currency: form.currency,
       });
       showToast('Job posted successfully');
       router.push('/my-postings');
@@ -92,20 +93,32 @@ export default function PostPage() {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-txt-primary">Budget (USD)</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-txt-tertiary">$</span>
-            <input
-              type="number"
-              value={form.budgetCents}
-              onChange={(e) => setForm({ ...form, budgetCents: e.target.value })}
-              placeholder="0"
-              required
-              min={1}
-              max={500000}
-              step={0.01}
-              className="w-full rounded-lg border border-border-subtle bg-surface pl-7 pr-3.5 py-2.5 text-sm"
-            />
+          <label className="mb-1.5 block text-sm font-medium text-txt-primary">Budget</label>
+          <div className="flex gap-2">
+            <select
+              value={form.currency}
+              onChange={(e) => setForm({ ...form, currency: e.target.value })}
+              className="w-24 rounded-lg border border-border-subtle bg-surface px-3 py-2.5 text-sm"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="INR">INR (₹)</option>
+            </select>
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-txt-tertiary">
+                {form.currency === 'INR' ? '₹' : '$'}
+              </span>
+              <input
+                type="number"
+                value={form.budgetCents}
+                onChange={(e) => setForm({ ...form, budgetCents: e.target.value })}
+                placeholder="0"
+                required
+                min={1}
+                max={form.currency === 'INR' ? 50000000 : 500000}
+                step={0.01}
+                className="w-full rounded-lg border border-border-subtle bg-surface pl-7 pr-3.5 py-2.5 text-sm"
+              />
+            </div>
           </div>
         </div>
 

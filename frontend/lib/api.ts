@@ -28,6 +28,7 @@ function mapFeedJob(j: any): FeedJob {
     lockedAt: j.locked_at ?? null, createdAt: j.created_at,
     clientId: j.client_id, clientName: j.client_name ?? j.clientName ?? 'Client',
     freelancerId: j.freelancer_id, freelancerName: j.freelancer_name ?? j.freelancerName,
+    currency: j.currency ?? 'USD',
   };
 }
 
@@ -184,7 +185,7 @@ export const api = {
     if (!neg) throw new Error('No active negotiation');
     const n = neg as any;
     const myRole = n.client_id === session.user.id ? 'CLIENT' : 'FREELANCER';
-    const { data: job } = await supabase.from('jobs').select('id, title, description, budget_cents, agreement_text, client_id').eq('id', n.job_id).single();
+    const { data: job } = await supabase.from('jobs').select('id, title, description, budget_cents, agreement_text, client_id, currency').eq('id', n.job_id).single();
     const j = job as any;
     const { data: clientUser } = await supabase.from('users').select('name').eq('id', j.client_id).single();
     const { data: senderUsers } = await supabase.from('users').select('id, name');
@@ -193,7 +194,7 @@ export const api = {
     const { data: msgs } = await supabase.from('negotiation_messages').select('id, sender_id, body, created_at').eq('negotiation_id', n.id).order('created_at', { ascending: true });
     return {
       negotiationId: n.id, myRole, outcome: n.outcome, closedAt: n.closed_at,
-      job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id },
+      job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id, currency: j.currency ?? 'USD' },
       messages: (msgs ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, senderName: userMap[m.sender_id] ?? 'User', body: m.body, createdAt: m.created_at })),
     };
   },
@@ -256,12 +257,13 @@ export const api = {
     return data as { ok: boolean; project_id?: string; error?: string };
   },
 
-  createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string; category: string }) => {
+  createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string; category: string; currency?: string }) => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase.from('jobs').insert({
       client_id: session.user.id, title: d.title, description: d.description,
-      budget_cents: d.budgetCents, agreement_text: d.agreementText, category: d.category, status: 'OPEN',
+      budget_cents: d.budgetCents, agreement_text: d.agreementText, category: d.category,
+      currency: d.currency ?? 'USD', status: 'OPEN',
     }).select().single();
     if (error) throw error;
     return { job: mapFeedJob({ ...data, client_name: session.user.user_metadata?.name ?? 'Client' }) };

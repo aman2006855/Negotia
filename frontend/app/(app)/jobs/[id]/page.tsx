@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { ArrowLeftIcon, ClockIcon, DollarIcon, StarIcon, CheckIcon } from '@/components/icons';
+import { formatBudget } from '@/lib/constants';
 import type { FeedJob } from '@/lib/types';
 
 type JobDetail = FeedJob & {
@@ -16,10 +17,6 @@ type JobDetail = FeedJob & {
   clientCompanyName?: string;
   agreementText?: string;
 };
-
-function formatBudget(cents: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(cents / 100);
-}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -144,7 +141,7 @@ export default function JobDetailPage() {
       <div className="flex items-center gap-4 mb-5">
         <div className="flex items-center gap-1.5 text-accent-600">
           <DollarIcon className="h-5 w-5" />
-          <span className="text-lg font-bold">{formatBudget(job.budgetCents)}</span>
+          <span className="text-lg font-bold">{formatBudget(job.budgetCents, job.currency)}</span>
         </div>
         <div className="flex items-center gap-1.5 text-txt-tertiary">
           <ClockIcon className="h-4 w-4" />

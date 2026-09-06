@@ -35,3 +35,10 @@ export const EXPERIENCE_OPTIONS = [
   { value: '1-3', label: '1–3 years' },
   { value: '3+', label: '3+ years' },
 ];
+
+export function formatBudget(cents: number, currency: string = 'USD') {
+  const code = currency === 'INR' ? 'INR' : 'USD';
+  const sym = currency === 'INR' ? '₹' : '$';
+  const val = currency === 'INR' ? cents / 100 : cents / 100;
+  return `${sym}${new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(val)}`;
+}
