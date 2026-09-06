@@ -103,6 +103,7 @@ export interface WorkspaceMessage {
   senderName: string;
   senderRole: Role;
   body: string;
+  imageUrl?: string;
   createdAt: string;
 }
 
@@ -126,6 +127,8 @@ export interface Project {
   clientName: string;
   freelancerId: string;
   freelancerName: string;
+  clientConfirmed: boolean;
+  freelancerConfirmed: boolean;
   milestones: Milestone[];
   messages: WorkspaceMessage[];
   createdAt: string;

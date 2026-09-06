@@ -300,7 +300,33 @@ export const api = {
       p_user_id: session.user.id,
     });
     if (error) throw error;
-    return data as { ok: boolean; project_id?: string; error?: string };
+    const result = data as { ok: boolean; project_id?: string; error?: string };
+    if (result.ok && result.project_id) {
+      const { error: msErr } = await supabase.from('milestones').insert({
+        project_id: result.project_id, title: 'Complete', status: 'TODO', sort_order: 999,
+      });
+      if (msErr) console.error('Failed to add default milestone:', msErr);
+    }
+    return result;
+  },
+
+  confirmProject: async (projectId: string): Promise<{ project: Project }> => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data: proj } = await supabase.from('projects').select('client_id, freelancer_id, client_confirmed, freelancer_confirmed').eq('id', projectId).single();
+    if (!proj) throw new Error('Project not found');
+    const p = proj as any;
+    const isClient = p.client_id === session.user.id;
+    const update: any = {};
+    if (isClient) update.client_confirmed = true;
+    else update.freelancer_confirmed = true;
+    await supabase.from('projects').update(update).eq('id', projectId);
+    const { data: updated } = await supabase.from('projects').select('client_confirmed, freelancer_confirmed').eq('id', projectId).single();
+    const u = updated as any;
+    if (u.client_confirmed && u.freelancer_confirmed) {
+      await supabase.from('projects').update({ status: 'COMPLETED', progress: 100 }).eq('id', projectId);
+    }
+    return api.getProject(projectId);
   },
 
   createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string; category: string; currency?: string }) => {
@@ -329,6 +355,7 @@ export const api = {
       status: p.status, progress: p.progress,
       clientId: p.client_id, clientName: p.users?.name ?? 'Client',
       freelancerId: p.freelancer_id, freelancerName: 'Freelancer',
+      clientConfirmed: p.client_confirmed ?? false, freelancerConfirmed: p.freelancer_confirmed ?? false,
       milestones: (p.milestones ?? []).map(mapMilestone), messages: [], createdAt: p.created_at,
     }));
   },
@@ -350,10 +377,12 @@ export const api = {
         status: proj.status, progress: proj.progress,
         clientId: proj.client_id, clientName: proj.users?.name ?? 'Client',
         freelancerId: proj.freelancer_id, freelancerName: 'Freelancer',
+        clientConfirmed: proj.client_confirmed ?? false,
+        freelancerConfirmed: proj.freelancer_confirmed ?? false,
         milestones: (proj.milestones ?? []).map(mapMilestone),
         messages: (proj.workspace_messages ?? []).map((m: any) => ({
           id: m.id, senderId: m.sender_id, senderName: senderMap[m.sender_id]?.name ?? 'User',
-          senderRole: (senderMap[m.sender_id]?.role as any) ?? 'FREELANCER', body: m.body, createdAt: m.created_at,
+          senderRole: (senderMap[m.sender_id]?.role as any) ?? 'FREELANCER', body: m.body, imageUrl: m.image_url ?? undefined, createdAt: m.created_at,
         })),
         createdAt: proj.created_at,
       },
@@ -442,9 +471,9 @@ export const api = {
     const openJobs = allJobs.filter((j: any) => j.status === 'OPEN').length;
     const negotiatingJobs = allJobs.filter((j: any) => j.status === 'NEGOTIATING').length;
     const completedJobs = allJobs.filter((j: any) => j.status === 'COMPLETED').length;
-    const { data: myProjects } = await supabase.from('projects').select('status, budget_cents').or(`client_id.eq.${userId},freelancer_id.eq.${userId}`);
+    const { data: myProjects } = await supabase.from('projects').select('status, budget_cents, client_id, freelancer_id').or(`client_id.eq.${userId},freelancer_id.eq.${userId}`);
     const allProjects = myProjects ?? [];
-    const activeProjects = allProjects.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'IN_REVIEW').length;
+    const activeProjects = allProjects.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'IN_REVIEW' || p.status === 'NOT_STARTED').length;
     const completedProjects = allProjects.filter((p: any) => p.status === 'COMPLETED').length;
     const totalSpent = allProjects.filter((p: any) => p.client_id === userId).reduce((sum: number, p: any) => sum + (p.budget_cents || 0), 0);
     const totalEarned = allProjects.filter((p: any) => p.freelancer_id === userId).reduce((sum: number, p: any) => sum + (p.budget_cents || 0), 0);

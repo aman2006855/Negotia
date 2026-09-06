@@ -31,6 +31,7 @@ export default function WorkspaceDetailPage() {
   const [input, setInput] = useState('');
   const [newMilestone, setNewMilestone] = useState('');
   const user = useBoard((s) => s.user);
+  const isClient = user?.role === 'CLIENT';
 
   useEffect(() => {
     (async () => {
@@ -54,6 +55,14 @@ export default function WorkspaceDetailPage() {
     if (!project) return;
     const result = await api.sendWorkspaceMessage(project.id, '', imageUrl);
     setProject(result.project);
+  }
+
+  async function handleConfirmProject() {
+    if (!project) return;
+    try {
+      const result = await api.confirmProject(project.id);
+      setProject(result.project);
+    } catch {}
   }
 
   async function handleToggleMilestone(milestoneId: string) {
@@ -109,6 +118,44 @@ export default function WorkspaceDetailPage() {
           <div className="h-full rounded-full bg-accent-600 transition-all duration-500" style={{ width: `${project.progress}%` }} />
         </div>
       </div>
+
+      {/* ─── Completion Confirmation ─── */}
+      {project.status !== 'COMPLETED' && (
+        <div className="mb-4 card p-4">
+          <h2 className="section-title mb-3 text-sm">Project Completion</h2>
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`flex-1 rounded-lg p-2.5 text-center text-xs font-medium border ${
+              project.clientConfirmed ? 'bg-success-50 text-success-600 border-success-500/20' : 'bg-inset text-txt-tertiary border-border-subtle'
+            }`}>
+              Client: {project.clientConfirmed ? '✓ Confirmed' : 'Pending'}
+            </div>
+            <div className={`flex-1 rounded-lg p-2.5 text-center text-xs font-medium border ${
+              project.freelancerConfirmed ? 'bg-success-50 text-success-600 border-success-500/20' : 'bg-inset text-txt-tertiary border-border-subtle'
+            }`}>
+              Freelancer: {project.freelancerConfirmed ? '✓ Confirmed' : 'Pending'}
+            </div>
+          </div>
+          {((isClient && !project.clientConfirmed) || (!isClient && !project.freelancerConfirmed)) && (
+            <button
+              onClick={handleConfirmProject}
+              className="w-full rounded-xl bg-success-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-success-700 transition-colors"
+            >
+              Mark as Complete
+            </button>
+          )}
+          {((isClient && !project.freelancerConfirmed) || (!isClient && !project.clientConfirmed)) && (
+            <p className="text-[11px] text-txt-tertiary text-center mt-2">Waiting for the other party to confirm</p>
+          )}
+        </div>
+      )}
+      {project.status === 'COMPLETED' && (
+        <div className="mb-4 card p-4 border-success-500/30 bg-success-50 dark:bg-success-50/10">
+          <div className="flex items-center gap-2 text-success-600 text-sm font-medium">
+            <CheckIcon className="h-4 w-4" />
+            Project Completed — Both parties confirmed
+          </div>
+        </div>
+      )}
 
       <div className="mb-4">
         <h2 className="section-title mb-3 text-sm">Milestones</h2>
