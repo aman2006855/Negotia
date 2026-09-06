@@ -22,10 +22,18 @@ const CLIENT_TABS = [
   { href: '/profile', label: 'Profile', icon: UserIcon },
 ] as const;
 
-const MARKETPLACE_TABS = [
+const MARKETPLACE_LAUNCH_TABS = [
   { href: '/marketplace', label: 'Store', icon: StoreIcon },
   { href: '/launches', label: 'Launches', icon: LaunchIcon },
-  { href: '/marketplace/new', label: 'Launch', icon: PlusIcon, isCenter: true },
+  { href: '/launches/new', label: 'Launch', icon: LaunchIcon, isCenter: true },
+  { href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  { href: '/my-store', label: 'My Store', icon: UserIcon },
+] as const;
+
+const MARKETPLACE_SELL_TABS = [
+  { href: '/marketplace', label: 'Store', icon: StoreIcon },
+  { href: '/launches', label: 'Launches', icon: LaunchIcon },
+  { href: '/marketplace/new', label: 'Sell', icon: PlusIcon, isCenter: true },
   { href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { href: '/my-store', label: 'My Store', icon: UserIcon },
 ] as const;
@@ -38,9 +46,10 @@ export function BottomNav() {
   const myActiveJobId = useBoard((s) => s.myActiveJobId);
 
   const isMarketplace = MARKETPLACE_ROUTES.some((r) => pathname.startsWith(r));
+  const isLaunches = pathname.startsWith('/launches');
 
   const tabs = isMarketplace
-    ? MARKETPLACE_TABS
+    ? (isLaunches ? MARKETPLACE_LAUNCH_TABS : MARKETPLACE_SELL_TABS)
     : user?.role === 'CLIENT'
       ? CLIENT_TABS
       : FREELANCER_TABS;
@@ -61,23 +70,20 @@ export function BottomNav() {
           if (isCenter) {
             return (
               <Link
-                key={tab.href}
+                key={tab.label}
                 href={tab.href}
                 className="relative flex flex-col items-center gap-0.5 py-2 px-3 transition-all duration-200"
               >
                 <span className={`flex h-11 w-11 items-center justify-center rounded-full transition-all duration-200 -mt-4 ${
-                  active
-                    ? 'bg-accent-600 text-white shadow-medium scale-105'
-                    : 'bg-accent-50 text-accent-600 hover:bg-accent-100 dark:bg-accent-50/20 dark:text-accent-400 dark:hover:bg-accent-50/30'
+                  isLaunches
+                    ? 'bg-purple-600 text-white shadow-medium hover:bg-purple-500'
+                    : 'bg-accent-600 text-white shadow-medium hover:bg-accent-500'
                 }`}>
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className={`text-[10px] font-medium transition-colors ${
-                  active ? 'text-accent-600 dark:text-accent-400' : 'text-txt-tertiary'
+                  isLaunches ? 'text-purple-600 dark:text-purple-400' : 'text-accent-600 dark:text-accent-400'
                 }`}>{tab.label}</span>
-                {!isMarketplace && user?.role === 'FREELANCER' && myActiveJobId && (
-                  <span className="absolute top-1.5 right-1 h-2 w-2 rounded-full bg-success-500 animate-pulse" />
-                )}
               </Link>
             );
           }
