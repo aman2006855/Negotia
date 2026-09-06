@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { getSocket } from '@/lib/socket';
 import { ArrowLeftIcon, ClockIcon, DollarIcon, StarIcon, CheckIcon } from '@/components/icons';
 import type { FeedJob } from '@/lib/types';
 
@@ -70,23 +69,23 @@ export default function JobDetailPage() {
     setLocking(true);
     setError('');
     try {
-      const res = await getSocket().timeout(10000).emitWithAck('job:lock', { jobId: job.id });
-      if (res && res.ok) {
-        acquireLock(res.job.id, res.negotiation.id);
+      const result = await api.lockJob(job.id);
+      if (result.ok && result.negotiationId) {
+        acquireLock(job.id, result.negotiationId);
         router.push('/negotiation');
       } else {
-        const err = res?.error;
-        if (err === 'JOB_TAKEN' || err === 'NOT_OPEN') {
+        const err = result.error;
+        console.error('lockJob failed:', err);
+        if (err === 'JOB_TAKEN') {
           showToast('Someone just took this job');
           router.push('/jobs');
-        } else if (err === 'ALREADY_NEGOTIATING' && myNegotiationId) {
-          router.push('/negotiation');
         } else {
           setError('Could not lock this job. It may have been taken already.');
         }
       }
-    } catch {
-      setError('Connection lost — please try again');
+    } catch (err: any) {
+      console.error('lockJob exception:', err?.message || err);
+      setError(err?.message || 'Something went wrong — please try again');
     } finally {
       setLocking(false);
     }

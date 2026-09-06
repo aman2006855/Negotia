@@ -92,6 +92,24 @@ export const api = {
     return { available: !data };
   },
 
+  lockJob: async (jobId: string): Promise<{ ok: boolean; negotiationId?: string; error?: string }> => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data, error } = await supabase.rpc('lock_job', {
+      p_job_id: jobId,
+      p_freelancer_id: session.user.id,
+    });
+    if (error) {
+      console.error('lockJob RPC error:', error.message, error.details, error.hint);
+      throw error;
+    }
+    const result = data as any;
+    if (!result?.ok) {
+      return { ok: false, error: result?.error ?? 'UNKNOWN' };
+    }
+    return { ok: true, negotiationId: result.negotiation_id };
+  },
+
   me: async (): Promise<Me> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
