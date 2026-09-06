@@ -96,6 +96,7 @@ function ProfileContent() {
   if (!profileUser) return null;
 
   const u = profileUser;
+  const isFreelancer = u.role === 'FREELANCER';
   const initials = (u.fullName || u.name || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
   const displayName = u.fullName || u.name || 'Add your name';
   const socials = u.socialLinks || {};
@@ -158,9 +159,9 @@ function ProfileContent() {
         {/* Role & Experience Badges */}
         <div className="flex items-center gap-2.5 mt-3 flex-wrap">
           <span className="inline-flex items-center rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700 border border-accent-200/60">
-            {u.role === 'FREELANCER' ? 'Freelancer' : 'Client'}
+            {isFreelancer ? 'Freelancer' : 'Client'}
           </span>
-          {u.experience && (
+          {isFreelancer && u.experience && (
             <span className="inline-flex items-center rounded-full bg-inset px-3 py-1 text-xs font-medium text-txt-secondary">
               {EXP_LABEL[u.experience] ?? u.experience}
             </span>
@@ -168,6 +169,11 @@ function ProfileContent() {
           {u.rating > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-3 py-1 text-xs font-medium text-warning-600 border border-warning-500/20">
               <StarIcon className="h-3 w-3" filled /> {u.rating.toFixed(1)} ({u.reviewCount})
+            </span>
+          )}
+          {!isFreelancer && u.entityType && (
+            <span className="inline-flex items-center rounded-full bg-inset px-3 py-1 text-xs font-medium text-txt-secondary">
+              {u.entityType === 'COMPANY' ? u.companyName || 'Company' : 'Individual'}
             </span>
           )}
         </div>
@@ -190,16 +196,16 @@ function ProfileContent() {
         )}
 
         {/* Stats */}
-        <div className={`grid gap-3 mt-6 ${isOwnProfile ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className={`grid gap-3 mt-6 ${isOwnProfile ? (isFreelancer ? 'grid-cols-3' : 'grid-cols-2') : 'grid-cols-2'}`}>
           <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
-            <div className="text-lg font-bold text-txt-primary">{u.completedJobs}</div>
-            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Completed</div>
+            <div className="text-lg font-bold text-txt-primary">{isFreelancer ? u.completedJobs : (u.completedJobs || 0)}</div>
+            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">{isFreelancer ? 'Completed' : 'Posted'}</div>
           </div>
           <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
             <div className="text-lg font-bold text-txt-primary">{u.activeJobs}</div>
-            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Active</div>
+            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">{isFreelancer ? 'Active' : 'Open'}</div>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile && isFreelancer && (
             <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
               <div className="text-lg font-bold text-txt-primary">${((u.totalEarningsCents) / 100).toLocaleString()}</div>
               <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Earnings</div>
@@ -218,8 +224,8 @@ function ProfileContent() {
         </div>
       )}
 
-      {/* ─── Skills ─── */}
-      {u.skills.length > 0 && (
+      {/* ─── Skills (Freelancers only) ─── */}
+      {isFreelancer && u.skills.length > 0 && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-3">Skills</h2>
@@ -234,8 +240,8 @@ function ProfileContent() {
         </div>
       )}
 
-      {/* ─── Portfolio Links ─── */}
-      {u.portfolioLinks.length > 0 && (
+      {/* ─── Portfolio Links (Freelancers only) ─── */}
+      {isFreelancer && u.portfolioLinks.length > 0 && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-3">Portfolio</h2>
@@ -257,8 +263,8 @@ function ProfileContent() {
         </div>
       )}
 
-      {/* ─── Past Work ─── */}
-      {u.pastWork.length > 0 && (
+      {/* ─── Past Work (Freelancers only) ─── */}
+      {isFreelancer && u.pastWork.length > 0 && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-3">Past Work</h2>
@@ -298,7 +304,9 @@ function ProfileContent() {
                 <StarIcon className="h-5 w-5 text-txt-tertiary" />
               </div>
               <p className="text-sm font-medium text-txt-secondary">No reviews yet</p>
-              <p className="text-xs text-txt-tertiary mt-1 text-center max-w-[200px]">Complete jobs to build your reputation</p>
+              <p className="text-xs text-txt-tertiary mt-1 text-center max-w-[200px]">
+                {isFreelancer ? 'Complete jobs to build your reputation' : 'Complete projects to leave reviews'}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">

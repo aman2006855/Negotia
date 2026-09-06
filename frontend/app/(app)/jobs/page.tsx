@@ -22,6 +22,13 @@ export default function JobsPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (user && user.role === 'CLIENT') {
+      window.location.href = '/workspace';
+      return;
+    }
+  }, [user]);
+
+  useEffect(() => {
     (async () => {
       try {
         const all = await api.feed();
