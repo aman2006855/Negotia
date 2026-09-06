@@ -1,18 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { StarIcon, ShareIcon, LogOutIcon, SunIcon, MoonIcon, ExternalLinkIcon } from '@/components/icons';
+import { StarIcon, ShareIcon, LogOutIcon, SunIcon, MoonIcon, ExternalLinkIcon, PencilIcon } from '@/components/icons';
 import { signOut } from '@/lib/supabase';
-import type { Review } from '@/lib/types';
+import type { Review, User } from '@/lib/types';
+import { Suspense } from 'react';
 
 const EXP_LABEL: Record<string, string> = { '0-1': '0–1 years', '1-3': '1–3 years', '3+': '3+ years' };
 
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" /></div>}>
+      <ProfileContent />
+    </Suspense>
+  );
+}
+
+function ProfileContent() {
   const router = useRouter();
-  const user = useBoard((s) => s.user);
+  const searchParams = useSearchParams();
+  const viewUserId = searchParams.get('userId');
+  const currentUser = useBoard((s) => s.user);
   const setUser = useBoard((s) => s.setUser);
   const reviews = useBoard((s) => s.reviews);
   const setReviews = useBoard((s) => s.setReviews);
@@ -21,25 +32,38 @@ export default function ProfilePage() {
   const logout = useBoard((s) => s.logout);
   const showToast = useBoard((s) => s.showToast);
   const [loading, setLoading] = useState(true);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
+
+  const isOwnProfile = !viewUserId || viewUserId === currentUser?.id;
 
   useEffect(() => {
     (async () => {
-      if (!user) {
-        try {
+      try {
+        if (!currentUser) {
           const me = await api.me();
           if (me.user) setUser(me.user);
-        } catch {}
-      }
+        }
+      } catch {}
+
       try {
-        const r = await api.getReviews(user?.id);
+        if (isOwnProfile) {
+          setProfileUser(currentUser);
+        } else if (viewUserId) {
+          const { user: u } = await api.getUserProfile(viewUserId);
+          setProfileUser(u);
+        }
+      } catch {}
+
+      try {
+        const r = await api.getReviews(isOwnProfile ? currentUser?.id : viewUserId ?? undefined);
         setReviews(r);
       } catch {}
       setLoading(false);
     })();
-  }, [setReviews, setUser, user]);
+  }, [currentUser, isOwnProfile, viewUserId, setUser, setReviews]);
 
   function handleShare() {
-    const url = `${window.location.origin}/client/${user?.id}`;
+    const url = `${window.location.origin}/profile?userId=${profileUser?.id}`;
     navigator.clipboard.writeText(url).then(() => showToast('Profile link copied'));
   }
 
@@ -49,9 +73,19 @@ export default function ProfilePage() {
     router.push('/login');
   }
 
-  if (!user) return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
+      </div>
+    );
+  }
 
-  const initials = user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  if (!profileUser) return null;
+
+  const u = profileUser;
+  const initials = (u.fullName || u.name).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const displayName = u.fullName || u.name;
 
   return (
     <div className="pb-24 max-w-2xl mx-auto">
@@ -59,8 +93,8 @@ export default function ProfilePage() {
       <div className="relative">
         <div className="h-32 sm:h-40 rounded-t-2xl bg-gradient-to-r from-accent-600 via-accent-500 to-blue-500" />
         <div className="absolute -bottom-10 left-6">
-          {user.avatar ? (
-            <img src={user.avatar} alt={user.name}
+          {u.avatar ? (
+            <img src={u.avatar} alt={displayName}
               className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-surface object-cover shadow-medium" />
           ) : (
             <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full border-4 border-surface bg-accent-100 text-2xl sm:text-3xl font-bold text-accent-700 shadow-medium">
@@ -74,55 +108,73 @@ export default function ProfilePage() {
       <div className="px-6 pt-14 pb-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-txt-primary">{user.name}</h1>
-            <p className="text-sm text-txt-secondary mt-0.5">{user.email}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-txt-primary">{displayName}</h1>
+            {u.username && <p className="text-sm text-accent-600 font-medium mt-0.5">@{u.username}</p>}
+            {!isOwnProfile && <p className="text-xs text-txt-tertiary mt-1">Public profile</p>}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleShare}
-              className="p-2 rounded-xl border border-border-subtle bg-surface text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all">
-              <ShareIcon className="h-4 w-4" />
-            </button>
+            {isOwnProfile ? (
+              <>
+                <button onClick={() => router.push('/profile/edit')}
+                  className="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-surface px-3 py-2 text-xs font-medium text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all">
+                  <PencilIcon className="h-3.5 w-3.5" /> Edit
+                </button>
+                <button onClick={handleShare}
+                  className="p-2 rounded-xl border border-border-subtle bg-surface text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all">
+                  <ShareIcon className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <button onClick={handleShare}
+                className="p-2 rounded-xl border border-border-subtle bg-surface text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all">
+                <ShareIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-2.5 mt-3 flex-wrap">
           <span className="inline-flex items-center rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700 border border-accent-200/60">
-            {user.role === 'FREELANCER' ? 'Freelancer' : 'Client'}
+            {u.role === 'FREELANCER' ? 'Freelancer' : 'Client'}
           </span>
-          {user.experience && (
+          {u.experience && (
             <span className="inline-flex items-center rounded-full bg-inset px-3 py-1 text-xs font-medium text-txt-secondary">
-              {EXP_LABEL[user.experience] ?? user.experience}
+              {EXP_LABEL[u.experience] ?? u.experience}
             </span>
           )}
-          {user.rating > 0 && (
+          {u.rating > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full bg-warning-50 px-3 py-1 text-xs font-medium text-warning-600 border border-warning-500/20">
-              <StarIcon className="h-3 w-3" filled /> {user.rating.toFixed(1)} ({user.reviewCount})
+              <StarIcon className="h-3 w-3" filled /> {u.rating.toFixed(1)} ({u.reviewCount})
             </span>
           )}
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
-          {[
-            { label: 'Completed', value: user.completedJobs, icon: '✓' },
-            { label: 'Active', value: user.activeJobs, icon: '●' },
-            { label: 'Earnings', value: `$${((user.totalEarningsCents) / 100).toLocaleString()}`, icon: '$' },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
-              <div className="text-lg font-bold text-txt-primary">{stat.value}</div>
-              <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">{stat.label}</div>
+        <div className={`grid gap-3 mt-6 ${isOwnProfile ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
+            <div className="text-lg font-bold text-txt-primary">{u.completedJobs}</div>
+            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Completed</div>
+          </div>
+          <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
+            <div className="text-lg font-bold text-txt-primary">{u.activeJobs}</div>
+            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Active</div>
+          </div>
+          {isOwnProfile && (
+            <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
+              <div className="text-lg font-bold text-txt-primary">${((u.totalEarningsCents) / 100).toLocaleString()}</div>
+              <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Earnings</div>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
       {/* ─── Skills ─── */}
-      {user.skills.length > 0 && (
+      {u.skills.length > 0 && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-3">Skills</h2>
             <div className="flex flex-wrap gap-2">
-              {user.skills.map((s) => (
+              {u.skills.map((s) => (
                 <span key={s} className="inline-flex items-center rounded-full bg-accent-50 border border-accent-200/60 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 transition-colors cursor-default">
                   {s}
                 </span>
@@ -133,22 +185,22 @@ export default function ProfilePage() {
       )}
 
       {/* ─── Capabilities ─── */}
-      {user.capabilities && (
+      {u.capabilities && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-2">About</h2>
-            <p className="text-sm text-txt-secondary leading-relaxed">{user.capabilities}</p>
+            <p className="text-sm text-txt-secondary leading-relaxed">{u.capabilities}</p>
           </div>
         </div>
       )}
 
       {/* ─── Portfolio Links ─── */}
-      {user.portfolioLinks.length > 0 && (
+      {u.portfolioLinks.length > 0 && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-3">Portfolio</h2>
             <div className="space-y-2">
-              {user.portfolioLinks.map((link) => (
+              {u.portfolioLinks.map((link) => (
                 <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm text-accent-600 hover:bg-accent-50 transition-colors group">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600 group-hover:bg-accent-100 transition-colors">
@@ -166,22 +218,22 @@ export default function ProfilePage() {
       )}
 
       {/* ─── Past Work ─── */}
-      {user.pastWork.length > 0 && (
+      {u.pastWork.length > 0 && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-3">Past Work</h2>
             <div className="space-y-3">
-              {user.pastWork.map((work, i) => (
+              {u.pastWork.map((work, i) => (
                 <div key={i} className="flex items-start gap-3 rounded-xl bg-inset p-3.5">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface border border-border-subtle text-txt-secondary text-xs font-bold shrink-0 mt-0.5">
                     {i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-txt-primary">{work.title}</div>
-                    {'url' in work && (work as any).url && (
-                      <a href={(work as any).url} target="_blank" rel="noopener noreferrer"
+                    {work.url && (
+                      <a href={work.url} target="_blank" rel="noopener noreferrer"
                         className="text-xs text-accent-600 hover:text-accent-700 truncate block mt-0.5">
-                        {(work as any).url}
+                        {work.url}
                       </a>
                     )}
                   </div>
@@ -232,22 +284,24 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* ─── Settings ─── */}
-      <div className="px-6 mb-6">
-        <div className="rounded-2xl bg-surface border border-border-subtle p-2 shadow-soft">
-          <button onClick={toggleTheme}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-txt-secondary hover:bg-inset transition-colors">
-            {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
-            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          </button>
-          <div className="mx-4 border-t border-border-subtle" />
-          <button onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-danger-600 hover:bg-danger-50 transition-colors">
-            <LogOutIcon className="h-4 w-4" />
-            Sign Out
-          </button>
+      {/* ─── Settings (own profile only) ─── */}
+      {isOwnProfile && (
+        <div className="px-6 mb-6">
+          <div className="rounded-2xl bg-surface border border-border-subtle p-2 shadow-soft">
+            <button onClick={toggleTheme}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-txt-secondary hover:bg-inset transition-colors">
+              {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+            <div className="mx-4 border-t border-border-subtle" />
+            <button onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-danger-600 hover:bg-danger-50 transition-colors">
+              <LogOutIcon className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

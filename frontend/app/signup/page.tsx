@@ -1,18 +1,19 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { BriefcaseIcon, SearchIcon, XIcon, UserIcon, BuildingIcon } from '@/components/icons';
-import { ArrowLeftIcon } from '@/components/icons';
+import { BriefcaseIcon, SearchIcon, XIcon, UserIcon, BuildingIcon, ArrowLeftIcon } from '@/components/icons';
 import { CustomSelect } from '@/components/CustomSelect';
 
-const VALID_STEPS = ['email', 'password', 'role', 'entity', 'profile'] as const;
+const VALID_STEPS = ['email', 'password', 'name', 'username', 'role', 'entity', 'profile'] as const;
 type Step = (typeof VALID_STEPS)[number];
-const STEP_INDEX: Record<Step, number> = { email: 0, password: 1, role: 2, entity: 3, profile: 4 };
-const BACK_MAP: Partial<Record<Step, Step>> = { password: 'email', role: 'password', entity: 'role', profile: 'entity' };
+const STEP_INDEX: Record<Step, number> = { email: 0, password: 1, name: 2, username: 3, role: 4, entity: 5, profile: 6 };
+const BACK_MAP: Partial<Record<Step, Step>> = {
+  password: 'email', name: 'password', username: 'name', role: 'username', entity: 'role', profile: 'entity',
+};
 
 const SKILL_OPTIONS = [
   'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Go', 'Rust',
@@ -28,66 +29,32 @@ const EXPERIENCE_OPTIONS = [
   { value: '1-3', label: '1-3 years' },
   { value: '3+', label: '3+ years' },
 ];
-
 const WORK_STYLE_OPTIONS = [
   { value: 'full-time', label: 'Full-time freelance' },
   { value: 'part-time', label: 'Part-time / Side projects' },
   { value: 'contract', label: 'Long-term contracts' },
   { value: 'project', label: 'Project-based' },
 ];
-
 const INDUSTRY_OPTIONS = [
-  { value: 'Technology', label: 'Technology' },
-  { value: 'Finance', label: 'Finance' },
-  { value: 'Healthcare', label: 'Healthcare' },
-  { value: 'Education', label: 'Education' },
-  { value: 'Marketing', label: 'Marketing' },
-  { value: 'E-commerce', label: 'E-commerce' },
-  { value: 'Real Estate', label: 'Real Estate' },
-  { value: 'Entertainment', label: 'Entertainment' },
-  { value: 'Manufacturing', label: 'Manufacturing' },
-  { value: 'Consulting', label: 'Consulting' },
-  { value: 'Legal', label: 'Legal' },
-  { value: 'Non-profit', label: 'Non-profit' },
-  { value: 'Gaming', label: 'Gaming' },
-  { value: 'Media', label: 'Media' },
-  { value: 'Travel', label: 'Travel' },
-  { value: 'Food & Beverage', label: 'Food & Beverage' },
-  { value: 'Automotive', label: 'Automotive' },
-  { value: 'Aerospace', label: 'Aerospace' },
-  { value: 'Telecommunications', label: 'Telecommunications' },
-  { value: 'Energy', label: 'Energy' },
-];
-
+  'Technology', 'Finance', 'Healthcare', 'Education', 'Marketing', 'E-commerce',
+  'Real Estate', 'Entertainment', 'Manufacturing', 'Consulting', 'Legal', 'Non-profit',
+  'Gaming', 'Media', 'Travel', 'Food & Beverage', 'Automotive', 'Aerospace', 'Telecommunications', 'Energy',
+].map((v) => ({ value: v, label: v }));
 const COMPANY_SIZE_OPTIONS = [
-  { value: 'Solo (1 person)', label: 'Solo (1 person)' },
-  { value: 'Small (2-10)', label: 'Small (2-10)' },
-  { value: 'Medium (11-50)', label: 'Medium (11-50)' },
-  { value: 'Large (51-200)', label: 'Large (51-200)' },
-  { value: 'Enterprise (200+)', label: 'Enterprise (200+)' },
-];
-
+  'Solo (1 person)', 'Small (2-10)', 'Medium (11-50)', 'Large (51-200)', 'Enterprise (200+)',
+].map((v) => ({ value: v, label: v }));
 const BUDGET_RANGE_OPTIONS = [
-  { value: 'Under $500', label: 'Under $500' },
-  { value: '$500 - $2,000', label: '$500 - $2,000' },
-  { value: '$2,000 - $5,000', label: '$2,000 - $5,000' },
-  { value: '$5,000 - $15,000', label: '$5,000 - $15,000' },
-  { value: '$15,000 - $50,000', label: '$15,000 - $50,000' },
-  { value: '$50,000+', label: '$50,000+' },
-];
+  'Under $500', '$500 - $2,000', '$2,000 - $5,000', '$5,000 - $15,000', '$15,000 - $50,000', '$50,000+',
+].map((v) => ({ value: v, label: v }));
 
-function validateEmail(e: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-}
-
+function validateEmail(e: string): boolean { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 function validatePassword(p: string): { valid: boolean; error: string } {
   if (p.length < 8) return { valid: false, error: 'Password must be at least 8 characters' };
-  if (!/[A-Z]/.test(p)) return { valid: false, error: 'Password must contain an uppercase letter' };
-  if (!/[a-z]/.test(p)) return { valid: false, error: 'Password must contain a lowercase letter' };
-  if (!/[0-9]/.test(p)) return { valid: false, error: 'Password must contain a number' };
+  if (!/[A-Z]/.test(p)) return { valid: false, error: 'Must contain an uppercase letter' };
+  if (!/[a-z]/.test(p)) return { valid: false, error: 'Must contain a lowercase letter' };
+  if (!/[0-9]/.test(p)) return { valid: false, error: 'Must contain a number' };
   return { valid: true, error: '' };
 }
-
 function getStep(raw: string | null): Step {
   if (raw && VALID_STEPS.includes(raw as Step)) return raw as Step;
   return 'email';
@@ -96,13 +63,9 @@ function getStep(raw: string | null): Step {
 function StepProgress({ current }: { current: Step }) {
   const idx = STEP_INDEX[current];
   return (
-    <div className="flex items-center gap-1.5 w-full mb-8">
+    <div className="flex items-center gap-1 w-full mb-8">
       {VALID_STEPS.map((_, i) => (
-        <div key={i} className="flex-1">
-          <div className={`h-1.5 rounded-full transition-all duration-300 ${
-            i <= idx ? 'bg-accent-600' : 'bg-border-subtle'
-          }`} />
-        </div>
+        <div key={i} className="flex-1"><div className={`h-1.5 rounded-full transition-all duration-300 ${i <= idx ? 'bg-accent-600' : 'bg-border-subtle'}`} /></div>
       ))}
     </div>
   );
@@ -120,6 +83,7 @@ function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setUser = useBoard((s) => s.setUser);
+  const user = useBoard((s) => s.user);
 
   const step = getStep(searchParams.get('step'));
   function go(s: Step) { router.push(`/signup?step=${s}`); }
@@ -134,9 +98,15 @@ function SignupContent() {
   const [passwordError, setPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [role, setRole] = useState<'CLIENT' | 'FREELANCER'>('FREELANCER');
   const [entityType, setEntityType] = useState<'INDIVIDUAL' | 'COMPANY'>('INDIVIDUAL');
-
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('');
   const [companySize, setCompanySize] = useState('');
@@ -155,9 +125,36 @@ function SignupContent() {
     (s) => s.toLowerCase().includes(skillSearch.toLowerCase()) && !skills.includes(s)
   );
 
+  // Google OAuth: auto-fill name from session
+  useEffect(() => {
+    if (user && !fullName) {
+      setFullName(user.fullName || user.name || '');
+      setUsername(user.username || '');
+      if (!user.username) go('username');
+    }
+  }, [user]);
+
+  // Debounced username check
+  const checkUsernameDebounced = useCallback((val: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setUsername(clean);
+    setUsernameAvailable(null);
+    setUsernameError('');
+    if (clean.length < 3) { setUsernameChecking(false); return; }
+    setUsernameChecking(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { available } = await api.checkUsername(clean);
+        setUsernameAvailable(available);
+        if (!available) setUsernameError('This username is already taken');
+      } catch { setUsernameAvailable(null); }
+      setUsernameChecking(false);
+    }, 400);
+  }, []);
+
   function handleEmailNext() {
-    setError('');
-    setEmailError('');
+    setError(''); setEmailError('');
     if (!email) { setEmailError('Email is required'); return; }
     if (!validateEmail(email)) { setEmailError('Enter a valid email address'); return; }
     go('password');
@@ -165,76 +162,55 @@ function SignupContent() {
 
   async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setPasswordError('');
+    setError(''); setPasswordError('');
     const v = validatePassword(password);
     if (!v.valid) { setPasswordError(v.error); return; }
     setLoading(true);
     try {
-      await api.signup({ name: name || email.split('@')[0], email, password });
-      go('role');
-    } catch {
-      setError('Signup failed. Email may already be in use.');
-    } finally {
-      setLoading(false);
-    }
+      await api.signup({ name: fullName || email.split('@')[0], email, password });
+      go('name');
+    } catch { setError('Signup failed. Email may already be in use.'); }
+    finally { setLoading(false); }
   }
 
   async function handleGoogleSignup() {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try { await api.googleLogin(); } catch { setError('Google sign-up failed'); setLoading(false); }
   }
 
   async function handleProfileSubmit() {
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       const { user: updatedUser } = await api.updateProfile({
-        name: name || email.split('@')[0] || 'User',
-        role,
-        skills,
-        capabilities,
-        experience: experience || undefined,
-        portfolioLinks,
-        pastWork,
-        profileCompleted: true,
+        name: fullName || name, fullName, username, role, skills, capabilities,
+        experience: experience || undefined, portfolioLinks, pastWork, profileCompleted: true,
       } as any);
       if (updatedUser) setUser(updatedUser);
       router.push('/jobs');
     } catch (err: any) {
       console.error('Profile setup failed:', err);
       setError(err?.message || 'Profile setup failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
-  function addSkill(skill: string) {
-    if (!skills.includes(skill)) setSkills([...skills, skill]);
-    setSkillSearch('');
-    setShowSkillDropdown(false);
-  }
+  function addSkill(skill: string) { if (!skills.includes(skill)) setSkills([...skills, skill]); setSkillSearch(''); setShowSkillDropdown(false); }
   function removeSkill(skill: string) { setSkills(skills.filter((s) => s !== skill)); }
   function addPortfolioLink() { setPortfolioLinks([...portfolioLinks, { label: '', url: '' }]); }
-  function updatePortfolioLink(i: number, field: 'label' | 'url', v: string) {
-    const u = [...portfolioLinks]; u[i] = { ...u[i], [field]: v }; setPortfolioLinks(u);
-  }
+  function updatePortfolioLink(i: number, field: 'label' | 'url', v: string) { const u = [...portfolioLinks]; u[i] = { ...u[i], [field]: v }; setPortfolioLinks(u); }
   function removePortfolioLink(i: number) { setPortfolioLinks(portfolioLinks.filter((_, j) => j !== i)); }
   function addPastWork() { setPastWork([...pastWork, { title: '', url: '' }]); }
-  function updatePastWork(i: number, field: 'title' | 'url', v: string) {
-    const u = [...pastWork]; u[i] = { ...u[i], [field]: v }; setPastWork(u);
-  }
+  function updatePastWork(i: number, field: 'title' | 'url', v: string) { const u = [...pastWork]; u[i] = { ...u[i], [field]: v }; setPastWork(u); }
   function removePastWork(i: number) { setPastWork(pastWork.filter((_, j) => j !== i)); }
 
   const titles: Record<Step, string> = {
-    email: 'Create your account', password: 'Set a password',
-    role: 'How will you use Negotia?',
+    email: 'Create your account', password: 'Set a password', name: 'What\'s your name?',
+    username: 'Choose a username', role: 'How will you use Negotia?',
     entity: role === 'CLIENT' ? 'Tell us about your company' : 'How do you work?',
     profile: 'Set up your profile',
   };
   const subtitles: Record<Step, string> = {
     email: 'Join Negotia and start negotiating', password: 'Secure your account',
+    name: 'This will be displayed on your profile', username: 'This is your unique @handle',
     role: 'Choose your primary role on the platform',
     entity: role === 'CLIENT' ? 'Help us personalize your experience' : 'Help clients understand your work style',
     profile: 'Tell us about yourself so we can match you better',
@@ -249,12 +225,10 @@ function SignupContent() {
           </div>
         </div>
 
-        {/* Back Navigation */}
         {step !== 'email' && (
           <button onClick={() => go(BACK_MAP[step]!)}
             className="flex items-center gap-1.5 text-sm text-txt-secondary hover:text-txt-primary transition-colors mb-4 -ml-1">
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
+            <ArrowLeftIcon className="h-4 w-4" /> Back
           </button>
         )}
 
@@ -285,12 +259,10 @@ function SignupContent() {
               </svg>
               {loading ? 'Signing up...' : 'Continue with Google'}
             </button>
-
             <div className="relative">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-subtle" /></div>
               <div className="relative flex justify-center text-xs"><span className="bg-surface px-3 text-txt-tertiary font-medium">or</span></div>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="label">Email address</label>
@@ -314,51 +286,36 @@ function SignupContent() {
               </div>
               <span className="text-sm font-medium text-txt-primary truncate">{email}</span>
             </div>
-
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
                 <label className="label">Password</label>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} value={password}
                     onChange={(e) => { setPassword(e.target.value); setPasswordError(''); }}
-                    className={`input-field py-3 pr-11 ${passwordError ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''}`}
+                    className={`input-field py-3 pr-11 ${passwordError ? 'border-danger-500' : ''}`}
                     placeholder="Min. 8 characters" autoFocus minLength={8} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-txt-tertiary hover:text-txt-secondary hover:bg-inset transition-colors">
-                    {showPassword ? (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
-                    ) : (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                    )}
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                   </button>
                 </div>
                 {passwordError && <p className="mt-1.5 text-xs text-danger-600">{passwordError}</p>}
-                {password && !passwordError && validatePassword(password).valid && (
-                  <p className="mt-1.5 text-xs text-success-600 font-medium">Strong password</p>
-                )}
+                {password && validatePassword(password).valid && <p className="mt-1.5 text-xs text-success-600 font-medium">Strong password</p>}
               </div>
-
               <div className="rounded-xl bg-inset p-3.5 space-y-2">
                 <p className="text-xs font-medium text-txt-tertiary">Password must contain:</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  {[
-                    { label: '8+ characters', check: password.length >= 8 },
-                    { label: 'Uppercase letter', check: /[A-Z]/.test(password) },
-                    { label: 'Lowercase letter', check: /[a-z]/.test(password) },
-                    { label: 'A number', check: /[0-9]/.test(password) },
+                  {[{ label: '8+ characters', check: password.length >= 8 }, { label: 'Uppercase letter', check: /[A-Z]/.test(password) },
+                    { label: 'Lowercase letter', check: /[a-z]/.test(password) }, { label: 'A number', check: /[0-9]/.test(password) }
                   ].map((rule) => (
                     <div key={rule.label} className={`flex items-center gap-2 text-xs ${rule.check ? 'text-success-600 font-medium' : 'text-txt-tertiary'}`}>
-                      {rule.check ? (
-                        <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                      ) : (
-                        <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3" /></svg>
-                      )}
+                      {rule.check ? <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        : <svg className="h-3.5 w-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3" /></svg>}
                       {rule.label}
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => go('email')} className="btn-secondary flex-1 py-3">Back</button>
                 <button type="submit" disabled={loading} className="btn-primary flex-1 py-3 text-sm font-semibold">
@@ -369,14 +326,61 @@ function SignupContent() {
           </div>
         )}
 
-        {/* ─── Step 3: Role ─── */}
+        {/* ─── Step 3: Full Name ─── */}
+        {step === 'name' && (
+          <div className="card p-6 sm:p-8 space-y-5">
+            <div>
+              <label className="label">Full name</label>
+              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fullName.trim().length >= 2 && go('username')}
+                className="input-field py-3" placeholder="e.g. Sarah Chen" autoFocus />
+              {fullName && fullName.trim().length < 2 && <p className="mt-1.5 text-xs text-danger-600">Name must be at least 2 characters</p>}
+            </div>
+            <button onClick={() => go('username')} disabled={fullName.trim().length < 2}
+              className="btn-primary w-full py-3 text-sm font-semibold">Continue</button>
+          </div>
+        )}
+
+        {/* ─── Step 4: Username ─── */}
+        {step === 'username' && (
+          <div className="card p-6 sm:p-8 space-y-5">
+            <div>
+              <label className="label">Username</label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-txt-tertiary text-sm font-medium">@</span>
+                <input type="text" value={username}
+                  onChange={(e) => checkUsernameDebounced(e.target.value)}
+                  className={`input-field py-3 pl-8 pr-10 ${
+                    usernameAvailable === true ? 'border-success-500 focus:ring-success-500/30 focus:border-success-500' :
+                    usernameAvailable === false || usernameError ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''
+                  }`}
+                  placeholder="yourname" autoFocus />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {usernameChecking && <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />}
+                  {!usernameChecking && usernameAvailable === true && <svg className="h-4 w-4 text-success-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                  {!usernameChecking && usernameAvailable === false && <svg className="h-4 w-4 text-danger-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>}
+                </div>
+              </div>
+              {usernameError && <p className="mt-1.5 text-xs text-danger-600">{usernameError}</p>}
+              {usernameAvailable === true && <p className="mt-1.5 text-xs text-success-600 font-medium">@{username} is available!</p>}
+              {username && username.length < 3 && !usernameError && <p className="mt-1.5 text-xs text-txt-tertiary">At least 3 characters (letters, numbers, _)</p>}
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => go('name')} className="btn-secondary flex-1 py-3">Back</button>
+              <button onClick={() => go('role')} disabled={!usernameAvailable || username.length < 3}
+                className="btn-primary flex-1 py-3 text-sm font-semibold">Continue</button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Step 5: Role ─── */}
         {step === 'role' && (
           <div className="card p-6 sm:p-8 space-y-6">
             <label className="label text-base font-semibold">I am a</label>
             <div className="grid grid-cols-2 gap-4">
               <button type="button" onClick={() => { setRole('FREELANCER'); go('entity'); }}
                 className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors duration-200 mb-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors mb-3">
                   <UserIcon className="h-7 w-7" />
                 </div>
                 <div className="text-sm font-semibold text-txt-primary">Freelancer</div>
@@ -384,7 +388,7 @@ function SignupContent() {
               </button>
               <button type="button" onClick={() => { setRole('CLIENT'); go('entity'); }}
                 className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors duration-200 mb-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors mb-3">
                   <BuildingIcon className="h-7 w-7" />
                 </div>
                 <div className="text-sm font-semibold text-txt-primary">Client</div>
@@ -394,56 +398,46 @@ function SignupContent() {
           </div>
         )}
 
-        {/* ─── Step 4: Entity ─── */}
+        {/* ─── Step 6: Entity ─── */}
         {step === 'entity' && (
           <div className="card p-6 sm:p-8 space-y-6">
             <label className="label text-base font-semibold">I am a</label>
             <div className="grid grid-cols-2 gap-4">
               <button type="button" onClick={() => setEntityType('INDIVIDUAL')}
                 className={`group flex flex-col items-center justify-center rounded-2xl border-2 p-5 text-center transition-all duration-200 cursor-pointer ${
-                  entityType === 'INDIVIDUAL' ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft' : 'border-border-subtle bg-surface hover:border-accent-400 hover:bg-accent-50/50'
+                  entityType === 'INDIVIDUAL' ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft' : 'border-border-subtle bg-surface hover:border-accent-400'
                 }`}>
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-colors ${
                   entityType === 'INDIVIDUAL' ? 'bg-accent-100 text-accent-600' : 'bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600'
-                }`}>
-                  <UserIcon className="h-6 w-6" />
-                </div>
+                }`}><UserIcon className="h-6 w-6" /></div>
                 <div className="text-sm font-semibold text-txt-primary">Individual</div>
                 <div className="mt-0.5 text-xs text-txt-tertiary">Working solo</div>
               </button>
               <button type="button" onClick={() => setEntityType('COMPANY')}
                 className={`group flex flex-col items-center justify-center rounded-2xl border-2 p-5 text-center transition-all duration-200 cursor-pointer ${
-                  entityType === 'COMPANY' ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft' : 'border-border-subtle bg-surface hover:border-accent-400 hover:bg-accent-50/50'
+                  entityType === 'COMPANY' ? 'border-accent-500 bg-accent-50 dark:bg-accent-50/20 shadow-soft' : 'border-border-subtle bg-surface hover:border-accent-400'
                 }`}>
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl mb-2 transition-colors ${
                   entityType === 'COMPANY' ? 'bg-accent-100 text-accent-600' : 'bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600'
-                }`}>
-                  <BuildingIcon className="h-6 w-6" />
-                </div>
+                }`}><BuildingIcon className="h-6 w-6" /></div>
                 <div className="text-sm font-semibold text-txt-primary">Company</div>
                 <div className="mt-0.5 text-xs text-txt-tertiary">Team or business</div>
               </button>
             </div>
-
             {entityType === 'COMPANY' && (
               <div className="space-y-4 animate-fade-in">
-                <div>
-                  <label className="label">Company Name</label>
-                  <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="input-field py-3" placeholder="Acme Inc." />
-                </div>
+                <div><label className="label">Company Name</label><input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="input-field py-3" placeholder="Acme Inc." /></div>
                 <CustomSelect value={industry} onChange={setIndustry} options={INDUSTRY_OPTIONS} placeholder="Select industry" />
                 <CustomSelect value={companySize} onChange={setCompanySize} options={COMPANY_SIZE_OPTIONS} placeholder="Select size" />
                 {role === 'CLIENT' && <CustomSelect value={budgetRange} onChange={setBudgetRange} options={BUDGET_RANGE_OPTIONS} placeholder="Select budget range" />}
               </div>
             )}
-
             {role === 'FREELANCER' && entityType === 'INDIVIDUAL' && (
               <div className="animate-fade-in">
                 <label className="label">Preferred work style</label>
                 <CustomSelect value={workStyle} onChange={setWorkStyle} options={WORK_STYLE_OPTIONS} placeholder="Select work style" />
               </div>
             )}
-
             <div className="flex gap-3 pt-2">
               <button onClick={() => go('role')} className="btn-secondary flex-1 py-3">Back</button>
               <button onClick={() => go('profile')} className="btn-primary flex-1 py-3 text-sm font-semibold">Continue</button>
@@ -451,23 +445,15 @@ function SignupContent() {
           </div>
         )}
 
-        {/* ─── Step 5: Profile ─── */}
+        {/* ─── Step 7: Profile ─── */}
         {step === 'profile' && (
           <div className="card p-6 sm:p-8 space-y-5">
             <div className="flex items-center gap-2 rounded-xl bg-accent-50/80 border border-accent-200/60 px-4 py-2.5">
-              <span className="inline-flex items-center rounded-full bg-accent-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                {role === 'CLIENT' ? 'Client' : 'Freelancer'}
-              </span>
+              <span className="inline-flex items-center rounded-full bg-accent-600 px-2.5 py-0.5 text-xs font-medium text-white">{role === 'CLIENT' ? 'Client' : 'Freelancer'}</span>
               <span className="text-txt-tertiary">&middot;</span>
-              <span className="inline-flex items-center rounded-full bg-inset px-2.5 py-0.5 text-xs font-medium text-txt-secondary">
-                {entityType === 'COMPANY' ? 'Company' : 'Individual'}
-              </span>
-              {entityType === 'COMPANY' && companyName && (
-                <>
-                  <span className="text-txt-tertiary">&middot;</span>
-                  <span className="text-xs font-medium text-accent-700 truncate max-w-[120px]">{companyName}</span>
-                </>
-              )}
+              <span className="inline-flex items-center rounded-full bg-inset px-2.5 py-0.5 text-xs font-medium text-txt-secondary">{entityType === 'COMPANY' ? 'Company' : 'Individual'}</span>
+              <span className="text-txt-tertiary">&middot;</span>
+              <span className="text-xs font-medium text-accent-700">@{username}</span>
             </div>
 
             {role === 'FREELANCER' && (
@@ -478,16 +464,12 @@ function SignupContent() {
                     <div className="flex items-center gap-2.5 rounded-xl border border-border-subtle bg-surface px-3.5 py-2.5 focus-within:ring-2 focus-within:ring-accent-500/30 focus-within:border-accent-500 transition-all">
                       <SearchIcon className="h-4 w-4 text-txt-tertiary shrink-0" />
                       <input type="text" value={skillSearch} onChange={(e) => { setSkillSearch(e.target.value); setShowSkillDropdown(true); }}
-                        onFocus={() => setShowSkillDropdown(true)} placeholder="Search skills..."
-                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-txt-tertiary" />
+                        onFocus={() => setShowSkillDropdown(true)} placeholder="Search skills..." className="flex-1 bg-transparent text-sm outline-none placeholder:text-txt-tertiary" />
                     </div>
                     {showSkillDropdown && filteredSkills.length > 0 && (
                       <div className="absolute z-20 mt-1.5 w-full max-h-48 overflow-y-auto rounded-xl border border-border-subtle bg-surface shadow-strong">
                         {filteredSkills.slice(0, 10).map((skill) => (
-                          <button key={skill} onClick={() => addSkill(skill)}
-                            className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-inset transition-colors">
-                            <span>{skill}</span>
-                          </button>
+                          <button key={skill} onClick={() => addSkill(skill)} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-inset transition-colors">{skill}</button>
                         ))}
                       </div>
                     )}
@@ -496,46 +478,35 @@ function SignupContent() {
                     <div className="flex flex-wrap gap-1.5 mt-2.5">
                       {skills.map((skill) => (
                         <span key={skill} className="inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200/60 px-2.5 py-1 text-xs font-medium text-accent-700">
-                          {skill}
-                          <button onClick={() => removeSkill(skill)} className="ml-0.5 rounded-full p-0.5 hover:bg-accent-100 transition-colors"><XIcon className="h-3 w-3" /></button>
+                          {skill}<button onClick={() => removeSkill(skill)} className="ml-0.5 rounded-full p-0.5 hover:bg-accent-100 transition-colors"><XIcon className="h-3 w-3" /></button>
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
-
                 <div>
                   <label className="label">Capabilities</label>
-                  <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)}
-                    className="input-field resize-none py-3" rows={3} placeholder="What can you build? (e.g., Full-stack web apps, mobile UIs, APIs...)" />
+                  <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)} className="input-field resize-none py-3" rows={3} placeholder="What can you build? (e.g., Full-stack web apps, mobile UIs, APIs...)" />
                 </div>
-
                 <div>
                   <label className="label">Experience</label>
                   <CustomSelect value={experience} onChange={setExperience} options={EXPERIENCE_OPTIONS} placeholder="Select experience level" />
                 </div>
-
                 <div>
                   <label className="label">Portfolio Links</label>
                   <div className="space-y-2.5">
                     {portfolioLinks.map((link, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <input type="text" value={link.label} onChange={(e) => updatePortfolioLink(i, 'label', e.target.value)}
-                          className="input-field w-28 py-2.5" placeholder="Label" />
-                        <input type="url" value={link.url} onChange={(e) => updatePortfolioLink(i, 'url', e.target.value)}
-                          className="input-field flex-1 py-2.5" placeholder="https://..." />
-                        <button onClick={() => removePortfolioLink(i)} className="shrink-0 p-2 rounded-lg text-txt-tertiary hover:text-danger-500 hover:bg-danger-50 transition-colors">
-                          <XIcon className="h-4 w-4" />
-                        </button>
+                        <input type="text" value={link.label} onChange={(e) => updatePortfolioLink(i, 'label', e.target.value)} className="input-field w-28 py-2.5" placeholder="Label" />
+                        <input type="url" value={link.url} onChange={(e) => updatePortfolioLink(i, 'url', e.target.value)} className="input-field flex-1 py-2.5" placeholder="https://..." />
+                        <button onClick={() => removePortfolioLink(i)} className="shrink-0 p-2 rounded-lg text-txt-tertiary hover:text-danger-500 hover:bg-danger-50 transition-colors"><XIcon className="h-4 w-4" /></button>
                       </div>
                     ))}
                     <button onClick={addPortfolioLink} className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-600 hover:text-accent-700 transition-colors">
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      Add link
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>Add link
                     </button>
                   </div>
                 </div>
-
                 <div>
                   <label className="label">Past Work</label>
                   <div className="space-y-3">
@@ -543,19 +514,14 @@ function SignupContent() {
                       <div key={i} className="rounded-xl border border-border-subtle bg-surface p-3 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-txt-tertiary">Project {i + 1}</span>
-                          <button onClick={() => removePastWork(i)} className="p-1 rounded-md text-txt-tertiary hover:text-danger-500 hover:bg-danger-50 transition-colors">
-                            <XIcon className="h-3.5 w-3.5" />
-                          </button>
+                          <button onClick={() => removePastWork(i)} className="p-1 rounded-md text-txt-tertiary hover:text-danger-500 hover:bg-danger-50 transition-colors"><XIcon className="h-3.5 w-3.5" /></button>
                         </div>
-                        <input type="text" value={work.title} onChange={(e) => updatePastWork(i, 'title', e.target.value)}
-                          className="input-field w-full py-2.5 text-sm" placeholder="Project title" />
-                        <input type="url" value={work.url} onChange={(e) => updatePastWork(i, 'url', e.target.value)}
-                          className="input-field w-full py-2.5 text-sm" placeholder="Project URL (optional)" />
+                        <input type="text" value={work.title} onChange={(e) => updatePastWork(i, 'title', e.target.value)} className="input-field w-full py-2.5 text-sm" placeholder="Project title" />
+                        <input type="url" value={work.url} onChange={(e) => updatePastWork(i, 'url', e.target.value)} className="input-field w-full py-2.5 text-sm" placeholder="Project URL (optional)" />
                       </div>
                     ))}
                     <button onClick={addPastWork} className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-600 hover:text-accent-700 transition-colors">
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                      Add project
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>Add project
                     </button>
                   </div>
                 </div>
@@ -565,8 +531,7 @@ function SignupContent() {
             {role === 'CLIENT' && (
               <div className="animate-fade-in">
                 <label className="label">What are you looking for?</label>
-                <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)}
-                  className="input-field resize-none py-3" rows={3} placeholder="Tell freelancers what kind of work you typically need..." />
+                <textarea value={capabilities} onChange={(e) => setCapabilities(e.target.value)} className="input-field resize-none py-3" rows={3} placeholder="Tell freelancers what kind of work you typically need..." />
               </div>
             )}
 
@@ -581,8 +546,7 @@ function SignupContent() {
 
         {step === 'email' && (
           <p className="mt-8 text-center text-sm text-txt-secondary">
-            Already have an account?{' '}
-            <Link href="/login" className="font-semibold text-accent-600 hover:text-accent-700 transition-colors">Sign in</Link>
+            Already have an account? <Link href="/login" className="font-semibold text-accent-600 hover:text-accent-700 transition-colors">Sign in</Link>
           </p>
         )}
       </div>

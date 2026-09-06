@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   // Check public.users — auto-create if missing
   const { data: existingUser, error: fetchError } = await supabase
     .from('users')
-    .select('id, profile_completed')
+    .select('id, profile_completed, username')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -45,12 +45,14 @@ export async function GET(request: NextRequest) {
   if (!existingUser) {
     const meta = user.user_metadata ?? {};
     const name = meta.name ?? meta.full_name ?? user.email?.split('@')[0] ?? 'User';
+    const fullName = meta.full_name ?? meta.name ?? null;
     const avatar = meta.avatar_url ?? meta.picture ?? null;
 
     const { error: insertError } = await supabase.from('users').upsert({
       id: user.id,
       email: user.email ?? '',
       name,
+      full_name: fullName,
       avatar_url: avatar,
       role: 'FREELANCER',
       skills: [],
@@ -68,8 +70,13 @@ export async function GET(request: NextRequest) {
       console.error('Error creating user row:', insertError.message);
     }
 
-    // New user — redirect to onboarding
-    return NextResponse.redirect(`${origin}/signup?step=role`);
+    // New user — claim username first
+    return NextResponse.redirect(`${origin}/signup?step=username`);
+  }
+
+  // Existing user — no username? force claim
+  if (!existingUser.username) {
+    return NextResponse.redirect(`${origin}/signup?step=username`);
   }
 
   // Existing user — check profile_completed

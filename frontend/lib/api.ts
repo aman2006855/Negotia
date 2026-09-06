@@ -3,7 +3,8 @@ import { supabase, signInWithEmail, signUpWithEmail, signInWithGoogle as sbGoogl
 
 function mapUser(u: any): User {
   return {
-    id: u.id, name: u.name, email: u.email, role: u.role,
+    id: u.id, name: u.name, fullName: u.full_name ?? u.name, username: u.username,
+    email: u.email, role: u.role,
     avatar: u.avatar_url, skills: u.skills ?? [],
     capabilities: u.capabilities, experience: u.experience,
     portfolioLinks: u.portfolio_links ?? [], pastWork: u.past_work ?? [],
@@ -50,6 +51,8 @@ export const api = {
     if (!session) throw new Error('Not authenticated');
     const updateData: any = {};
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.fullName !== undefined) updateData.full_name = data.fullName;
+    if (data.username !== undefined) updateData.username = data.username;
     if (data.role !== undefined) updateData.role = data.role;
     if (data.skills !== undefined) updateData.skills = data.skills;
     if (data.capabilities !== undefined) updateData.capabilities = data.capabilities;
@@ -59,12 +62,19 @@ export const api = {
     if ((data as any).profileCompleted !== undefined) {
       updateData.profile_completed = (data as any).profileCompleted;
     }
-    const { data: result, error } = await supabase.from('users').update(updateData).eq('id', session.user.id).select().maybeSingle();
+    const { error } = await supabase.from('users').update(updateData).eq('id', session.user.id);
     if (error) {
       console.error('updateProfile error:', error.message, error.details, error.hint);
       throw error;
     }
     return api.me();
+  },
+
+  checkUsername: async (username: string): Promise<{ available: boolean }> => {
+    const clean = username.toLowerCase().trim();
+    if (!clean || clean.length < 3) return { available: false };
+    const { data } = await supabase.from('users').select('id').eq('username', clean).maybeSingle();
+    return { available: !data };
   },
 
   me: async (): Promise<Me> => {
