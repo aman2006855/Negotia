@@ -88,6 +88,10 @@ export default function WorkspacePage() {
                   <span>{project.milestones.filter((m) => m.status === 'DONE').length}/{project.milestones.length} milestones</span>
                 </div>
               )}
+              <div className="mt-2 text-[10px] text-txt-tertiary flex items-center gap-1">
+                <span>ℹ️</span>
+                <span>Payment settled directly — platform has no role</span>
+              </div>
             </Link>
           ))}
         </div>

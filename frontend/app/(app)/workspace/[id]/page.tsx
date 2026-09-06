@@ -146,6 +146,7 @@ export default function WorkspaceDetailPage() {
           {((isClient && !project.freelancerConfirmed) || (!isClient && !project.clientConfirmed)) && (
             <p className="text-[11px] text-txt-tertiary text-center mt-2">Waiting for the other party to confirm</p>
           )}
+          <p className="text-[10px] text-txt-tertiary text-center mt-2">ℹ️ Payment settled directly — platform has no role</p>
         </div>
       )}
       {project.status === 'COMPLETED' && (
