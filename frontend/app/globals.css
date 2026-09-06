@@ -63,14 +63,22 @@
 }
 
 /* ─── Base Styles ─── */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 body {
   @apply antialiased;
   font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif;
   background: hsl(var(--color-canvas));
   color: hsl(var(--color-txt-primary));
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-* { border-color: hsl(var(--color-border-subtle)); }
+*, *::before, *::after {
+  border-color: hsl(var(--color-border-subtle));
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
 
 ::selection { background: hsl(var(--color-accent-100)); color: hsl(var(--color-accent-700)); }
 .dark ::selection { background: hsl(var(--color-accent-50)); color: hsl(var(--color-accent-500)); }
