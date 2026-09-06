@@ -103,9 +103,9 @@ function ProfileContent() {
   const hasSocialLinks = SOCIAL_CONFIG.some((s) => socials[s.key]);
 
   return (
-    <div className="pb-24 max-w-2xl mx-auto">
+    <div className="pb-24 w-full">
       {/* ─── Dynamic Cover Banner ─── */}
-      <div className="relative h-32 sm:h-40 rounded-t-2xl overflow-hidden">
+      <div className="relative h-32 sm:h-40 overflow-hidden">
         {u.coverPhotoUrl ? (
           <img src={u.coverPhotoUrl} alt="Cover"
             className="w-full h-full object-cover" />
