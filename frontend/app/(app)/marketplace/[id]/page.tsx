@@ -7,7 +7,7 @@ import { useBoard } from '@/lib/store';
 import { TechBadges } from '@/components/marketplace/TechBadges';
 import { StarRating } from '@/components/marketplace/StarRating';
 import { formatBudget } from '@/lib/constants';
-import { ArrowLeftIcon, ExternalLinkIcon, CartIcon } from '@/components/icons';
+import { ArrowLeftIcon, ExternalLinkIcon, CartIcon, PencilIcon, TrashIcon, ShareIcon } from '@/components/icons';
 import type { MarketListing, LaunchRating } from '@/lib/types';
 
 export default function ListingDetailPage() {
@@ -17,6 +17,7 @@ export default function ListingDetailPage() {
   const [ratings, setRatings] = useState<LaunchRating[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [deliveryUrl, setDeliveryUrl] = useState<string | null>(null);
   const user = useBoard((s) => s.user);
   const showToast = useBoard((s) => s.showToast);
@@ -48,6 +49,35 @@ export default function ListingDetailPage() {
     setPurchasing(false);
   };
 
+  const handleDelete = async () => {
+    if (!listing || !confirm('Delete this listing? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      await api.deleteListing(listing.id);
+      showToast('Listing deleted');
+      router.push('/marketplace');
+    } catch (e: any) {
+      showToast(e.message || 'Failed to delete');
+      setDeleting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: listing?.title ?? 'Check this out', url });
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Link copied to clipboard!');
+      } catch {
+        showToast('Failed to copy link');
+      }
+    }
+  };
+
   if (loading) return <div className="page-container py-12 text-center text-txt-tertiary text-sm">Loading...</div>;
   if (!listing) return <div className="page-container py-12 text-center text-txt-tertiary text-sm">Listing not found.</div>;
 
@@ -61,7 +91,28 @@ export default function ListingDetailPage() {
         <button onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-bg-secondary">
           <ArrowLeftIcon className="w-5 h-5 text-txt-secondary" />
         </button>
-        <h2 className="text-base font-semibold text-txt-primary truncate">{listing.title}</h2>
+        <h2 className="text-base font-semibold text-txt-primary truncate flex-1">{listing.title}</h2>
+        <div className="flex items-center gap-1 shrink-0">
+          <button onClick={handleShare}
+            className="p-1.5 rounded-lg hover:bg-bg-secondary text-txt-secondary hover:text-accent-500 transition-colors"
+            aria-label="Share listing">
+            <ShareIcon className="w-4 h-4" />
+          </button>
+          {isOwner && (
+            <>
+              <button onClick={() => router.push(`/marketplace/${listing.id}/edit`)}
+                className="p-1.5 rounded-lg hover:bg-bg-secondary text-txt-secondary hover:text-accent-500 transition-colors"
+                aria-label="Edit listing">
+                <PencilIcon className="w-4 h-4" />
+              </button>
+              <button onClick={handleDelete} disabled={deleting}
+                className="p-1.5 rounded-lg hover:bg-bg-secondary text-txt-secondary hover:text-danger-500 transition-colors"
+                aria-label="Delete listing">
+                <TrashIcon className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">

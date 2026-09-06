@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { CldUploadWidget } from 'next-cloudinary';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { createListingSchema } from '@/lib/validations/marketplace';
 import { MARKET_CATEGORIES } from '@/lib/constants';
-import { PlusIcon, TrashIcon, UploadIcon } from '@/components/icons';
+import { PlusIcon, TrashIcon, UploadIcon, ArrowLeftIcon } from '@/components/icons';
 
-export default function NewListingPage() {
+export default function EditListingPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const showToast = useBoard((s) => s.showToast);
 
+  const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -24,8 +25,29 @@ export default function NewListingPage() {
   const [currency, setCurrency] = useState<'USD' | 'INR'>('USD');
   const [pricingModel, setPricingModel] = useState<'FIXED' | 'SUBSCRIPTION'>('FIXED');
   const [deliveryUrl, setDeliveryUrl] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const l = await api.getListing(id);
+        setTitle(l.title);
+        setCategory(l.category);
+        setDescription(l.description);
+        setTechStack(l.techStack);
+        setPreviewUrl(l.previewUrl ?? '');
+        setThumbnailUrl(l.thumbnailUrl ?? '');
+        setPriceCents(l.priceCents ? (l.priceCents / 100).toString() : '');
+        setCurrency(l.currency as 'USD' | 'INR');
+        setPricingModel(l.pricingModel as 'FIXED' | 'SUBSCRIPTION');
+        setDeliveryUrl(l.deliveryUrl ?? '');
+      } catch {
+        showToast('Failed to load listing');
+        router.back();
+      }
+      setLoading(false);
+    })();
+  }, [id]);
 
   const addTech = () => {
     const t = techInput.trim();
@@ -38,47 +60,45 @@ export default function NewListingPage() {
   const removeTech = (t: string) => setTechStack(techStack.filter((x) => x !== t));
 
   const handleSubmit = async () => {
-    setErrors({});
-    const parsed = createListingSchema.safeParse({
-      kind: 'SALE', title, category, description, techStack, previewUrl, thumbnailUrl,
-      priceCents: Math.round(parseFloat(priceCents || '0') * 100),
-      currency, pricingModel, deliveryUrl,
-    });
-    if (!parsed.success) {
-      const errs: Record<string, string> = {};
-      parsed.error.issues.forEach((i) => { errs[i.path.join('.')] = i.message; });
-      setErrors(errs);
+    if (!title.trim() || !category || !description.trim() || !deliveryUrl.trim()) {
+      showToast('Please fill all required fields');
       return;
     }
     setSubmitting(true);
     try {
-      const listing = await api.createListing({
-        kind: 'SALE', title, category, description, techStack, previewUrl, thumbnailUrl,
+      await api.updateListing(id, {
+        title, category, description, techStack, previewUrl, thumbnailUrl,
         priceCents: Math.round(parseFloat(priceCents || '0') * 100),
         currency, pricingModel, deliveryUrl,
       });
-      showToast('Listing published!');
-      router.push(`/marketplace/${listing.id}`);
+      showToast('Listing updated!');
+      router.push(`/marketplace/${id}`);
     } catch (e: any) {
-      showToast(e.message || 'Failed to create listing');
+      showToast(e.message || 'Failed to update listing');
     }
     setSubmitting(false);
   };
 
+  if (loading) return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 flex items-center justify-center text-txt-tertiary text-sm">Loading...</div>
+    </div>
+  );
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      <div className="shrink-0 px-4 py-3 border-b border-border-subtle bg-surface flex items-center gap-3">
+        <button onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-bg-secondary">
+          <ArrowLeftIcon className="w-5 h-5 text-txt-secondary" />
+        </button>
+        <h2 className="text-base font-semibold text-txt-primary">Edit Listing</h2>
+      </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="page-container py-4 max-w-lg mx-auto space-y-5">
-          <div>
-            <h1 className="text-2xl font-bold text-txt-primary">Launch a Product</h1>
-            <p className="text-sm text-txt-secondary mt-1">List your digital product for sale on the marketplace.</p>
-          </div>
-
           {/* Title */}
           <div>
             <label className="label">Title *</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="input-field" placeholder="My Awesome Product" />
-            {errors.title && <p className="error-text">{errors.title}</p>}
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="input-field" />
           </div>
 
           {/* Category */}
@@ -88,15 +108,13 @@ export default function NewListingPage() {
               <option value="">Select category...</option>
               {MARKET_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            {errors.category && <p className="error-text">{errors.category}</p>}
           </div>
 
           {/* Description */}
           <div>
             <label className="label">Description *</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-              className="input-field min-h-[120px] resize-none" placeholder="Tell people what this is..." />
-            {errors.description && <p className="error-text">{errors.description}</p>}
+              className="input-field min-h-[120px] resize-none" />
           </div>
 
           {/* Tech Stack */}
@@ -124,7 +142,7 @@ export default function NewListingPage() {
             )}
           </div>
 
-          {/* Thumbnail upload */}
+          {/* Thumbnail */}
           <div>
             <label className="label">Thumbnail Image</label>
             <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
@@ -150,7 +168,6 @@ export default function NewListingPage() {
           <div>
             <label className="label">Preview / Live URL</label>
             <input value={previewUrl} onChange={(e) => setPreviewUrl(e.target.value)} className="input-field" placeholder="https://..." />
-            {errors.previewUrl && <p className="error-text">{errors.previewUrl}</p>}
           </div>
 
           {/* Price */}
@@ -159,7 +176,6 @@ export default function NewListingPage() {
               <label className="label">Price *</label>
               <input type="number" value={priceCents} onChange={(e) => setPriceCents(e.target.value)}
                 className="input-field" placeholder="0.00" step="0.01" min="1" />
-              {errors.priceCents && <p className="error-text">{errors.priceCents}</p>}
             </div>
             <div className="w-28">
               <label className="label">Currency</label>
@@ -179,13 +195,12 @@ export default function NewListingPage() {
 
           {/* Delivery URL */}
           <div>
-            <label className="label">Delivery Link (repo / download) *</label>
+            <label className="label">Delivery Link *</label>
             <input value={deliveryUrl} onChange={(e) => setDeliveryUrl(e.target.value)} className="input-field" placeholder="https://github.com/..." />
-            {errors.deliveryUrl && <p className="error-text">{errors.deliveryUrl}</p>}
           </div>
 
           <button onClick={handleSubmit} disabled={submitting} className="btn-primary w-full py-3 text-base font-semibold mt-4">
-            {submitting ? 'Publishing...' : '🚀 Publish Listing'}
+            {submitting ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

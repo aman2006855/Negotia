@@ -7,7 +7,7 @@ import { useBoard } from '@/lib/store';
 import { TechBadges } from '@/components/marketplace/TechBadges';
 import { StarRating } from '@/components/marketplace/StarRating';
 import { RatingWidget } from '@/components/marketplace/RatingWidget';
-import { ArrowLeftIcon, ExternalLinkIcon, CartIcon } from '@/components/icons';
+import { ArrowLeftIcon, ExternalLinkIcon, CartIcon, ShareIcon } from '@/components/icons';
 import type { MarketListing, LaunchRating } from '@/lib/types';
 
 export default function LaunchDetailPage() {
@@ -46,6 +46,22 @@ export default function LaunchDetailPage() {
     setPurchasing(false);
   };
 
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: listing?.title ?? 'Check this out', url });
+      } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Link copied to clipboard!');
+      } catch {
+        showToast('Failed to copy link');
+      }
+    }
+  };
+
   if (loading) return <div className="page-container py-12 text-center text-txt-tertiary text-sm">Loading...</div>;
   if (!listing) return <div className="page-container py-12 text-center text-txt-tertiary text-sm">Launch not found.</div>;
 
@@ -57,7 +73,12 @@ export default function LaunchDetailPage() {
         <button onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-bg-secondary">
           <ArrowLeftIcon className="w-5 h-5 text-txt-secondary" />
         </button>
-        <h2 className="text-base font-semibold text-txt-primary truncate">{listing.title}</h2>
+        <h2 className="text-base font-semibold text-txt-primary truncate flex-1">{listing.title}</h2>
+        <button onClick={handleShare}
+          className="p-1.5 rounded-lg hover:bg-bg-secondary text-txt-secondary hover:text-accent-500 transition-colors shrink-0"
+          aria-label="Share launch">
+          <ShareIcon className="w-4 h-4" />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">

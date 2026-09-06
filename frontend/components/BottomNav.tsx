@@ -25,7 +25,7 @@ const CLIENT_TABS = [
 const MARKETPLACE_TABS = [
   { href: '/marketplace', label: 'Store', icon: StoreIcon },
   { href: '/launches', label: 'Launches', icon: LaunchIcon },
-  { href: '/marketplace/new', label: 'Sell', icon: PlusIcon, isCenter: true },
+  { href: '/marketplace/new', label: 'Launch', icon: PlusIcon, isCenter: true },
   { href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
   { href: '/my-store', label: 'My Store', icon: UserIcon },
 ] as const;
