@@ -30,8 +30,10 @@ exception when duplicate_object then null;
 end $$;
 
 create or replace view public.freelancer_feed as
-select j.id, j.title, j.description, j.budget_cents, j.status, j.created_at,
-  u.name as client_name, u.id as client_id
+select j.id, j.title, j.description, j.budget_cents, j.category, j.currency, j.status,
+  j.locked_at, j.created_at, j.agreement_text,
+  u.name as client_name, u.id as client_id, u.avatar_url as client_avatar,
+  u.rating as client_rating, u.review_count as client_review_count
 from jobs j join users u on u.id = j.client_id
 where j.status = 'OPEN'
 order by j.created_at desc;
