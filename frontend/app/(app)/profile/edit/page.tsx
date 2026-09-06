@@ -168,7 +168,7 @@ export default function EditProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="pb-24 max-w-lg mx-auto px-4 py-6">
+    <div className="pb-32 max-w-lg mx-auto px-4 py-6">
       <button onClick={() => router.push('/profile')}
         className="flex items-center gap-1.5 text-sm text-txt-secondary hover:text-txt-primary transition-colors mb-6 -ml-1">
         <ArrowLeftIcon className="h-4 w-4" /> Back to profile
@@ -193,7 +193,8 @@ export default function EditProfilePage() {
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-accent-600 via-accent-500 to-blue-500" />
           )}
-          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          {/* Always-visible edit button for mobile */}
+          <div className="absolute top-3 right-3 z-10">
             <CldUploadWidget
               uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
               options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 3 }}
@@ -201,12 +202,13 @@ export default function EditProfilePage() {
             >
               {({ open }) => (
                 <button onClick={() => open()}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/90 backdrop-blur px-4 py-2 text-xs font-semibold text-gray-800 hover:bg-white transition-colors shadow-lg">
-                  <CameraIcon className="h-3.5 w-3.5" /> Change Cover Photo
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors shadow-lg">
+                  <CameraIcon className="h-4 w-4" />
                 </button>
               )}
             </CldUploadWidget>
           </div>
+          {/* Center label when no cover */}
           {!coverPreview && (
             <div className="absolute inset-0 flex items-center justify-center">
               <CldUploadWidget
