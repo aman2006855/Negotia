@@ -40,20 +40,23 @@ export function TopHeader() {
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Toggle button — opposite of current view, with shine when inactive */}
+          {/* Toggle button — opposite of current view, with shine+blink when on Jobs */}
           <Link
             href={isMarketplace ? '/jobs' : '/marketplace'}
-            className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
-              isMarketplace
-                ? 'text-txt-secondary hover:bg-inset hover:text-txt-primary'
-                : 'text-txt-secondary hover:bg-inset hover:text-txt-primary'
-            } ${isMarketplace ? 'nav-shine-btn nav-glow' : ''}`}
+            className={`relative flex items-center gap-1.5 rounded-xl transition-all duration-200 ${
+              !isMarketplace
+                ? 'h-9 px-3 nav-shine-btn text-accent-600 dark:text-accent-400 font-semibold text-xs'
+                : 'h-8 w-8 justify-center text-txt-secondary hover:bg-inset hover:text-txt-primary'
+            }`}
             aria-label={isMarketplace ? 'Switch to Jobs' : 'Switch to Marketplace'}
           >
             {isMarketplace ? (
               <BriefcaseIcon className="h-[18px] w-[18px]" />
             ) : (
-              <StoreIcon className="h-[18px] w-[18px]" />
+              <>
+                <StoreIcon className="h-[18px] w-[18px]" />
+                <span className="hidden sm:inline">Store</span>
+              </>
             )}
           </Link>
 

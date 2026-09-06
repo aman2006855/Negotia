@@ -263,25 +263,45 @@ button { cursor: pointer; }
 }
 
 @keyframes nav-glow-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsla(var(--color-accent-500) / 0); }
-  50% { box-shadow: 0 0 8px 2px hsla(var(--color-accent-500) / 0.35); }
+  0%, 100% { box-shadow: 0 0 4px 1px hsla(var(--color-accent-500) / 0.3); }
+  50% { box-shadow: 0 0 14px 4px hsla(var(--color-accent-500) / 0.55); }
+}
+
+@keyframes nav-blink {
+  0%, 100% { background-color: hsla(var(--color-accent-500) / 0.08); border-color: hsla(var(--color-accent-400) / 0.4); }
+  50% { background-color: hsla(var(--color-accent-400) / 0.18); border-color: hsla(var(--color-accent-400) / 0.8); }
+}
+
+@keyframes nav-icon-bounce {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.15) rotate(-4deg); }
+  50% { transform: scale(1.25); }
+  75% { transform: scale(1.15) rotate(4deg); }
 }
 
 .nav-shine-btn {
   position: relative;
   overflow: hidden;
+  border: 1.5px solid hsla(var(--color-accent-400) / 0.3);
+  animation: nav-blink 1.2s ease-in-out infinite, nav-glow-pulse 1.5s ease-in-out infinite;
 }
 .nav-shine-btn::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(110deg, transparent 30%, hsla(var(--color-accent-400) / 0.18) 45%, hsla(var(--color-accent-300) / 0.3) 50%, hsla(var(--color-accent-400) / 0.18) 55%, transparent 70%);
+  background: linear-gradient(110deg, transparent 20%, hsla(var(--color-accent-300) / 0.25) 40%, hsla(0, 0%, 100%, 0.45) 50%, hsla(var(--color-accent-300) / 0.25) 60%, transparent 80%);
   background-size: 200% 100%;
-  animation: nav-shine 2.5s ease-in-out infinite;
+  animation: nav-shine 1.4s ease-in-out infinite;
   border-radius: inherit;
   pointer-events: none;
 }
+.nav-shine-btn > svg,
+.nav-shine-btn > span {
+  animation: nav-icon-bounce 1.6s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
 
 .nav-glow {
-  animation: nav-glow-pulse 2s ease-in-out infinite;
+  animation: nav-glow-pulse 1.5s ease-in-out infinite;
 }
