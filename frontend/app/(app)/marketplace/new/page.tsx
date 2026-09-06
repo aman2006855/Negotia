@@ -7,7 +7,6 @@ import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { createListingSchema } from '@/lib/validations/marketplace';
 import { MARKET_CATEGORIES } from '@/lib/constants';
-import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import { PlusIcon, TrashIcon, UploadIcon } from '@/components/icons';
 
 export default function NewListingPage() {
@@ -69,7 +68,6 @@ export default function NewListingPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <MarketplaceTabs />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="page-container py-4 max-w-lg mx-auto space-y-5">
           <h1 className="text-2xl font-bold text-txt-primary">Add Listing</h1>

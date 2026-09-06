@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useBoard } from '@/lib/store';
-import { BriefcaseIcon, MessageIcon, FolderIcon, BarChartIcon, UserIcon, PlusIcon } from './icons';
+import { BriefcaseIcon, MessageIcon, FolderIcon, BarChartIcon, UserIcon, PlusIcon, StoreIcon, LaunchIcon, TrophyIcon } from './icons';
 
 const FREELANCER_TABS = [
   { href: '/jobs', label: 'Jobs', icon: BriefcaseIcon },
@@ -22,12 +22,28 @@ const CLIENT_TABS = [
   { href: '/profile', label: 'Profile', icon: UserIcon },
 ] as const;
 
+const MARKETPLACE_TABS = [
+  { href: '/marketplace', label: 'Store', icon: StoreIcon },
+  { href: '/launches', label: 'Launches', icon: LaunchIcon },
+  { href: '/marketplace/new', label: 'Sell', icon: PlusIcon, isCenter: true },
+  { href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+  { href: '/my-store', label: 'My Store', icon: UserIcon },
+] as const;
+
+const MARKETPLACE_ROUTES = ['/marketplace', '/launches', '/leaderboard', '/my-store'];
+
 export function BottomNav() {
   const pathname = usePathname();
   const user = useBoard((s) => s.user);
   const myActiveJobId = useBoard((s) => s.myActiveJobId);
 
-  const tabs = user?.role === 'CLIENT' ? CLIENT_TABS : FREELANCER_TABS;
+  const isMarketplace = MARKETPLACE_ROUTES.some((r) => pathname.startsWith(r));
+
+  const tabs = isMarketplace
+    ? MARKETPLACE_TABS
+    : user?.role === 'CLIENT'
+      ? CLIENT_TABS
+      : FREELANCER_TABS;
 
   function isActive(href: string) {
     if (href === '/jobs') return pathname === '/jobs' || pathname === '/';
@@ -59,7 +75,7 @@ export function BottomNav() {
                 <span className={`text-[10px] font-medium transition-colors ${
                   active ? 'text-accent-600 dark:text-accent-400' : 'text-txt-tertiary'
                 }`}>{tab.label}</span>
-                {user?.role === 'FREELANCER' && myActiveJobId && (
+                {!isMarketplace && user?.role === 'FREELANCER' && myActiveJobId && (
                   <span className="absolute top-1.5 right-1 h-2 w-2 rounded-full bg-success-500 animate-pulse" />
                 )}
               </Link>

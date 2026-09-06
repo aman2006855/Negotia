@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { MarketCard } from '@/components/marketplace/MarketCard';
-import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import { MARKET_CATEGORIES } from '@/lib/constants';
 import { SearchIcon } from '@/components/icons';
 import type { MarketListing } from '@/lib/types';
@@ -29,7 +28,6 @@ export default function MarketplacePage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <MarketplaceTabs />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="page-container py-4">
           {/* Header */}

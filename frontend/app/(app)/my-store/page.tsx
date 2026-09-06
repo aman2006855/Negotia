@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { MarketCard } from '@/components/marketplace/MarketCard';
-import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import { StarRating } from '@/components/marketplace/StarRating';
 import { formatBudget } from '@/lib/constants';
 import type { MarketListing, SellerStats } from '@/lib/types';
@@ -33,14 +32,12 @@ export default function MyStorePage() {
 
   if (loading) return (
     <div className="h-full flex flex-col overflow-hidden">
-      <MarketplaceTabs />
       <div className="flex-1 flex items-center justify-center text-txt-tertiary text-sm">Loading...</div>
     </div>
   );
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <MarketplaceTabs />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="page-container py-4 max-w-lg mx-auto space-y-4">
           {/* Header */}

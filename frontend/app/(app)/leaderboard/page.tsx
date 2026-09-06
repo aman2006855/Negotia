@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { LaunchCard } from '@/components/marketplace/LaunchCard';
-import { MarketplaceTabs } from '@/components/marketplace/MarketplaceTabs';
 import type { MarketListing } from '@/lib/types';
 
 export default function LeaderboardPage() {
@@ -22,7 +21,6 @@ export default function LeaderboardPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <MarketplaceTabs />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="page-container py-4 max-w-lg mx-auto">
           <div className="mb-5">
