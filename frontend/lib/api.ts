@@ -6,7 +6,7 @@ function mapUser(u: any): User {
     id: u.id, name: u.name, fullName: u.full_name ?? u.name, username: u.username,
     email: u.email, role: u.role,
     avatar: u.avatar_url, skills: u.skills ?? [],
-    capabilities: u.capabilities, experience: u.experience,
+    capabilities: u.capabilities, about: u.about, experience: u.experience,
     portfolioLinks: u.portfolio_links ?? [], pastWork: u.past_work ?? [],
     totalEarningsCents: u.total_earnings_cents ?? 0,
     completedJobs: u.completed_jobs ?? 0, activeJobs: u.active_jobs ?? 0,
@@ -56,6 +56,7 @@ export const api = {
     if (data.role !== undefined) updateData.role = data.role;
     if (data.skills !== undefined) updateData.skills = data.skills;
     if (data.capabilities !== undefined) updateData.capabilities = data.capabilities;
+    if (data.about !== undefined) updateData.about = data.about;
     if (data.experience !== undefined) updateData.experience = data.experience;
     if (data.portfolioLinks !== undefined) updateData.portfolio_links = data.portfolioLinks;
     if (data.pastWork !== undefined) updateData.past_work = data.pastWork;

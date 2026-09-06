@@ -84,8 +84,8 @@ function ProfileContent() {
   if (!profileUser) return null;
 
   const u = profileUser;
-  const initials = (u.fullName || u.name).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-  const displayName = u.fullName || u.name;
+  const initials = (u.fullName || u.name || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const displayName = u.fullName || u.name || 'Add your name';
 
   return (
     <div className="pb-24 max-w-2xl mx-auto">
@@ -110,6 +110,7 @@ function ProfileContent() {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-txt-primary">{displayName}</h1>
             {u.username && <p className="text-sm text-accent-600 font-medium mt-0.5">@{u.username}</p>}
+            {!u.fullName && !u.name && <p className="text-sm text-txt-tertiary mt-1 italic">Add your name</p>}
             {!isOwnProfile && <p className="text-xs text-txt-tertiary mt-1">Public profile</p>}
           </div>
           <div className="flex items-center gap-2">
@@ -184,12 +185,12 @@ function ProfileContent() {
         </div>
       )}
 
-      {/* ─── Capabilities ─── */}
-      {u.capabilities && (
+      {/* ─── About ─── */}
+      {(u.about || u.capabilities) && (
         <div className="px-6 mb-6">
           <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
             <h2 className="text-sm font-semibold text-txt-primary mb-2">About</h2>
-            <p className="text-sm text-txt-secondary leading-relaxed">{u.capabilities}</p>
+            <p className="text-sm text-txt-secondary leading-relaxed">{u.about || u.capabilities}</p>
           </div>
         </div>
       )}

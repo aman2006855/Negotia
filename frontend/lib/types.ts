@@ -15,6 +15,7 @@ export interface User {
   avatar?: string;
   skills: string[];
   capabilities?: string;
+  about?: string;
   experience?: '0-1' | '1-3' | '3+';
   portfolioLinks: { label: string; url: string }[];
   pastWork: { title: string; description?: string; url?: string }[];
