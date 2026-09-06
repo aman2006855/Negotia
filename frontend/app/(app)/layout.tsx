@@ -12,7 +12,11 @@ import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 
 const MARKETPLACE_ROUTES = ['/marketplace', '/launches', '/leaderboard', '/my-store'];
-const JOBS_ROUTES = ['/jobs'];
+
+function getSection(pathname: string): 'jobs' | 'marketplace' {
+  if (MARKETPLACE_ROUTES.some((r) => pathname.startsWith(r))) return 'marketplace';
+  return 'jobs';
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -20,10 +24,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const acquireLock = useBoard((s) => s.acquireLock);
   const [loaded, setLoaded] = useState(false);
   const [splash, setSplash] = useState<'jobs' | 'marketplace' | null>(null);
-  const prevPath = useRef(pathname);
-
-  const isMarketplace = MARKETPLACE_ROUTES.some((r) => pathname.startsWith(r));
-  const isJobs = JOBS_ROUTES.some((r) => pathname.startsWith(r)) || pathname === '/';
+  const prevSection = useRef<'jobs' | 'marketplace'>(getSection(pathname));
+  const initialized = useRef(false);
 
   useEffect(() => {
     api.me().then((me) => {
@@ -32,17 +34,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
 
-  // Detect route change into jobs or marketplace → show splash
+  // Only show splash when SECTION changes (jobs ↔ marketplace), not within same section
   useEffect(() => {
-    if (prevPath.current === pathname) return;
-    prevPath.current = pathname;
+    const currentSection = getSection(pathname);
 
-    if (isMarketplace) {
-      setSplash('marketplace');
-    } else if (isJobs) {
-      setSplash('jobs');
+    // Skip first render
+    if (!initialized.current) {
+      initialized.current = true;
+      prevSection.current = currentSection;
+      return;
     }
-  }, [pathname, isMarketplace, isJobs]);
+
+    if (currentSection !== prevSection.current) {
+      prevSection.current = currentSection;
+      setSplash(currentSection);
+    }
+  }, [pathname]);
 
   const dismissSplash = useCallback(() => setSplash(null), []);
 
