@@ -6,6 +6,9 @@ function mapUser(u: any): User {
     id: u.id, name: u.name, fullName: u.full_name ?? u.name, username: u.username,
     email: u.email, role: u.role,
     avatar: u.avatar_url, skills: u.skills ?? [],
+    entityType: u.entity_type, companyName: u.company_name,
+    industry: u.industry, companySize: u.company_size,
+    budgetRange: u.budget_range, workStyle: u.work_style,
     capabilities: u.capabilities, about: u.about, experience: u.experience,
     portfolioLinks: u.portfolio_links ?? [], pastWork: u.past_work ?? [],
     totalEarningsCents: u.total_earnings_cents ?? 0,
@@ -54,6 +57,12 @@ export const api = {
     if (data.fullName !== undefined) updateData.full_name = data.fullName;
     if (data.username !== undefined) updateData.username = data.username;
     if (data.role !== undefined) updateData.role = data.role;
+    if (data.entityType !== undefined) updateData.entity_type = data.entityType;
+    if (data.companyName !== undefined) updateData.company_name = data.companyName;
+    if (data.industry !== undefined) updateData.industry = data.industry;
+    if (data.companySize !== undefined) updateData.company_size = data.companySize;
+    if (data.budgetRange !== undefined) updateData.budget_range = data.budgetRange;
+    if (data.workStyle !== undefined) updateData.work_style = data.workStyle;
     if (data.skills !== undefined) updateData.skills = data.skills;
     if (data.capabilities !== undefined) updateData.capabilities = data.capabilities;
     if (data.about !== undefined) updateData.about = data.about;

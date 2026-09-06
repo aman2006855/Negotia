@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
   // 2. Check public.users — auto-create if missing
   const { data: existingUser } = await supabase
     .from('users')
-    .select('id, profile_completed, username')
+    .select('id, profile_completed, username, role, entity_type, full_name')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -74,30 +74,34 @@ export async function middleware(request: NextRequest) {
       profile_completed: false,
     }, { onConflict: 'id' });
 
+    // New user — go to first incomplete step
     const signupUrl = request.nextUrl.clone();
     signupUrl.pathname = '/signup';
     signupUrl.searchParams.set('step', 'username');
     return Response.redirect(signupUrl);
   }
 
-  // 3. No username set -> force username step
+  // 3. Already completed onboarding — let them through
+  if (existingUser.profile_completed) {
+    return;
+  }
+
+  // 4. Incomplete onboarding — find first missing step and redirect
+  const signupUrl = request.nextUrl.clone();
+  signupUrl.pathname = '/signup';
+
   if (!existingUser.username) {
-    const signupUrl = request.nextUrl.clone();
-    signupUrl.pathname = '/signup';
     signupUrl.searchParams.set('step', 'username');
-    return Response.redirect(signupUrl);
-  }
-
-  // 4. profile_completed = false -> /signup?step=role
-  if (!existingUser.profile_completed) {
-    const signupUrl = request.nextUrl.clone();
-    signupUrl.pathname = '/signup';
+  } else if (!existingUser.role) {
     signupUrl.searchParams.set('step', 'role');
-    return Response.redirect(signupUrl);
+  } else if (!existingUser.entity_type) {
+    signupUrl.searchParams.set('step', 'entity');
+  } else {
+    // All fields filled but profile_completed still false — go to profile step
+    signupUrl.searchParams.set('step', 'profile');
   }
 
-  // 4. All good — allow through
-  return;
+  return Response.redirect(signupUrl);
 }
 
 export const config = {

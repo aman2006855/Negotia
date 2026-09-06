@@ -34,12 +34,20 @@ export async function GET(request: NextRequest) {
   // Check public.users — auto-create if missing
   const { data: existingUser, error: fetchError } = await supabase
     .from('users')
-    .select('id, profile_completed, username')
+    .select('id, profile_completed, username, role, entity_type')
     .eq('id', user.id)
     .maybeSingle();
 
   if (fetchError) {
     console.error('Error checking users table:', fetchError.message);
+  }
+
+  function getIncompleteStep(u: { username?: string; role?: string; entity_type?: string; profile_completed: boolean }): string {
+    if (u.profile_completed) return '';
+    if (!u.username) return 'username';
+    if (!u.role) return 'role';
+    if (!u.entity_type) return 'entity';
+    return 'profile';
   }
 
   if (!existingUser) {
@@ -70,18 +78,13 @@ export async function GET(request: NextRequest) {
       console.error('Error creating user row:', insertError.message);
     }
 
-    // New user — claim username first
     return NextResponse.redirect(`${origin}/signup?step=username`);
   }
 
-  // Existing user — no username? force claim
-  if (!existingUser.username) {
-    return NextResponse.redirect(`${origin}/signup?step=username`);
-  }
-
-  // Existing user — check profile_completed
-  if (!existingUser.profile_completed) {
-    return NextResponse.redirect(`${origin}/signup?step=role`);
+  // Find first incomplete step
+  const step = getIncompleteStep(existingUser);
+  if (step) {
+    return NextResponse.redirect(`${origin}/signup?step=${step}`);
   }
 
   // Profile complete — redirect to requested page or /jobs

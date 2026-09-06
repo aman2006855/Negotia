@@ -89,6 +89,7 @@ function SignupContent() {
   function go(s: Step) { router.push(`/signup?step=${s}`); }
 
   const [loading, setLoading] = useState(false);
+  const [prefillDone, setPrefillDone] = useState(false);
   const [error, setError] = useState('');
 
   const [name, setName] = useState('');
@@ -117,7 +118,7 @@ function SignupContent() {
   const [capabilities, setCapabilities] = useState('');
   const [experience, setExperience] = useState('');
   const [portfolioLinks, setPortfolioLinks] = useState<{ label: string; url: string }[]>([]);
-  const [pastWork, setPastWork] = useState<{ title: string; url: string }[]>([]);
+  const [pastWork, setPastWork] = useState<{ title: string; description?: string; url?: string }[]>([]);
   const [skillSearch, setSkillSearch] = useState('');
   const [showSkillDropdown, setShowSkillDropdown] = useState(false);
 
@@ -125,16 +126,37 @@ function SignupContent() {
     (s) => s.toLowerCase().includes(skillSearch.toLowerCase()) && !skills.includes(s)
   );
 
-  // Google OAuth: auto-fill name from session
+  // ─── Pre-fill from DB on mount ───
   useEffect(() => {
-    if (user && !fullName) {
-      setFullName(user.fullName || user.name || '');
-      setUsername(user.username || '');
-      if (!user.username) go('username');
-    }
-  }, [user]);
+    (async () => {
+      try {
+        const me = user ? { user } : await api.me();
+        const u = me.user;
+        if (u) {
+          setUser(u);
+          setFullName(u.fullName || u.name || '');
+          setEmail(u.email || '');
+          setUsername(u.username || '');
+          if (u.username) setUsernameAvailable(true);
+          setRole(u.role || 'FREELANCER');
+          setEntityType(u.entityType || 'INDIVIDUAL');
+          setCompanyName(u.companyName || '');
+          setIndustry(u.industry || '');
+          setCompanySize(u.companySize || '');
+          setBudgetRange(u.budgetRange || '');
+          setWorkStyle(u.workStyle || '');
+          setSkills(u.skills || []);
+          setCapabilities(u.capabilities || '');
+          setExperience(u.experience || '');
+          setPortfolioLinks(u.portfolioLinks || []);
+          setPastWork(u.pastWork || []);
+        }
+      } catch {}
+      setPrefillDone(true);
+    })();
+  }, []);
 
-  // Debounced username check
+  // ─── Debounced username check ───
   const checkUsernameDebounced = useCallback((val: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const clean = val.toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -152,6 +174,8 @@ function SignupContent() {
       setUsernameChecking(false);
     }, 400);
   }, []);
+
+  // ─── Step handlers: save to DB immediately ───
 
   function handleEmailNext() {
     setError(''); setEmailError('');
@@ -178,11 +202,48 @@ function SignupContent() {
     try { await api.googleLogin(); } catch { setError('Google sign-up failed'); setLoading(false); }
   }
 
+  async function handleNameNext() {
+    setError('');
+    if (!fullName.trim() || fullName.trim().length < 2) { setError('Name must be at least 2 characters'); return; }
+    setLoading(true);
+    try {
+      await api.updateProfile({ fullName: fullName.trim(), name: fullName.trim() } as any);
+      go('username');
+    } catch { setError('Failed to save. Try again.'); }
+    finally { setLoading(false); }
+  }
+
+  async function handleUsernameNext() {
+    setError('');
+    if (!username || username.length < 3) { setError('Username must be at least 3 characters'); return; }
+    if (usernameAvailable === false) { setError('Username is already taken'); return; }
+    setLoading(true);
+    try {
+      await api.updateProfile({ username } as any);
+      go('role');
+    } catch { setError('Failed to save. Try again.'); }
+    finally { setLoading(false); }
+  }
+
+  function handleRoleNext(nextRole: 'CLIENT' | 'FREELANCER') {
+    setRole(nextRole);
+    api.updateProfile({ role: nextRole } as any).catch(() => {});
+    go('entity');
+  }
+
+  function handleEntityNext() {
+    api.updateProfile({
+      entityType, companyName, industry, companySize, budgetRange, workStyle,
+    } as any).catch(() => {});
+    go('profile');
+  }
+
   async function handleProfileSubmit() {
     setLoading(true); setError('');
     try {
       const { user: updatedUser } = await api.updateProfile({
-        name: fullName || name, fullName, username, role, skills, capabilities,
+        name: fullName || name, fullName, username, role, entityType, companyName,
+        industry, companySize, budgetRange, workStyle, skills, capabilities,
         experience: experience || undefined, portfolioLinks, pastWork, profileCompleted: true,
       } as any);
       if (updatedUser) setUser(updatedUser);
@@ -198,7 +259,7 @@ function SignupContent() {
   function addPortfolioLink() { setPortfolioLinks([...portfolioLinks, { label: '', url: '' }]); }
   function updatePortfolioLink(i: number, field: 'label' | 'url', v: string) { const u = [...portfolioLinks]; u[i] = { ...u[i], [field]: v }; setPortfolioLinks(u); }
   function removePortfolioLink(i: number) { setPortfolioLinks(portfolioLinks.filter((_, j) => j !== i)); }
-  function addPastWork() { setPastWork([...pastWork, { title: '', url: '' }]); }
+  function addPastWork() { setPastWork([...pastWork, { title: '', description: '', url: '' }]); }
   function updatePastWork(i: number, field: 'title' | 'url', v: string) { const u = [...pastWork]; u[i] = { ...u[i], [field]: v }; setPastWork(u); }
   function removePastWork(i: number) { setPastWork(pastWork.filter((_, j) => j !== i)); }
 
@@ -215,6 +276,14 @@ function SignupContent() {
     entity: role === 'CLIENT' ? 'Help us personalize your experience' : 'Help clients understand your work style',
     profile: 'Tell us about yourself so we can match you better',
   };
+
+  if (!prefillDone) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-canvas px-4 py-10 sm:py-16">
@@ -332,12 +401,17 @@ function SignupContent() {
             <div>
               <label className="label">Full name</label>
               <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fullName.trim().length >= 2 && go('username')}
+                onKeyDown={(e) => e.key === 'Enter' && fullName.trim().length >= 2 && handleNameNext()}
                 className="input-field py-3" placeholder="e.g. Sarah Chen" autoFocus />
               {fullName && fullName.trim().length < 2 && <p className="mt-1.5 text-xs text-danger-600">Name must be at least 2 characters</p>}
             </div>
-            <button onClick={() => go('username')} disabled={fullName.trim().length < 2}
-              className="btn-primary w-full py-3 text-sm font-semibold">Continue</button>
+            <div className="flex gap-3 pt-1">
+              <button onClick={() => go('password')} className="btn-secondary flex-1 py-3">Back</button>
+              <button onClick={handleNameNext} disabled={loading || fullName.trim().length < 2}
+                className="btn-primary flex-1 py-3 text-sm font-semibold">
+                {loading ? 'Saving...' : 'Continue'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -367,8 +441,10 @@ function SignupContent() {
             </div>
             <div className="flex gap-3 pt-1">
               <button onClick={() => go('name')} className="btn-secondary flex-1 py-3">Back</button>
-              <button onClick={() => go('role')} disabled={!usernameAvailable || username.length < 3}
-                className="btn-primary flex-1 py-3 text-sm font-semibold">Continue</button>
+              <button onClick={handleUsernameNext} disabled={loading || !usernameAvailable || username.length < 3}
+                className="btn-primary flex-1 py-3 text-sm font-semibold">
+                {loading ? 'Saving...' : 'Continue'}
+              </button>
             </div>
           </div>
         )}
@@ -378,7 +454,7 @@ function SignupContent() {
           <div className="card p-6 sm:p-8 space-y-6">
             <label className="label text-base font-semibold">I am a</label>
             <div className="grid grid-cols-2 gap-4">
-              <button type="button" onClick={() => { setRole('FREELANCER'); go('entity'); }}
+              <button type="button" onClick={() => handleRoleNext('FREELANCER')}
                 className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors mb-3">
                   <UserIcon className="h-7 w-7" />
@@ -386,7 +462,7 @@ function SignupContent() {
                 <div className="text-sm font-semibold text-txt-primary">Freelancer</div>
                 <div className="mt-1 text-xs text-txt-tertiary">Find work & get hired</div>
               </button>
-              <button type="button" onClick={() => { setRole('CLIENT'); go('entity'); }}
+              <button type="button" onClick={() => handleRoleNext('CLIENT')}
                 className="group flex flex-col items-center justify-center rounded-2xl border-2 border-border-subtle bg-surface p-6 text-center transition-all duration-200 hover:border-accent-400 hover:bg-accent-50/50 cursor-pointer">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-inset text-txt-secondary group-hover:bg-accent-100 group-hover:text-accent-600 transition-colors mb-3">
                   <BuildingIcon className="h-7 w-7" />
@@ -440,7 +516,7 @@ function SignupContent() {
             )}
             <div className="flex gap-3 pt-2">
               <button onClick={() => go('role')} className="btn-secondary flex-1 py-3">Back</button>
-              <button onClick={() => go('profile')} className="btn-primary flex-1 py-3 text-sm font-semibold">Continue</button>
+              <button onClick={handleEntityNext} className="btn-primary flex-1 py-3 text-sm font-semibold">Continue</button>
             </div>
           </div>
         )}

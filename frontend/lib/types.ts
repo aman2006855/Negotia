@@ -13,6 +13,12 @@ export interface User {
   email: string;
   role: Role;
   avatar?: string;
+  entityType?: 'INDIVIDUAL' | 'COMPANY';
+  companyName?: string;
+  industry?: string;
+  companySize?: string;
+  budgetRange?: string;
+  workStyle?: string;
   skills: string[];
   capabilities?: string;
   about?: string;
