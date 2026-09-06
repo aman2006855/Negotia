@@ -130,6 +130,10 @@ export const api = {
     }
     if (error) throw error;
     const user = mapUser(data);
+    const { data: myJobs } = await supabase.from('jobs').select('status').eq('client_id', session.user.id);
+    const allMyJobs = myJobs ?? [];
+    user.completedJobs = allMyJobs.filter((j: any) => j.status === 'COMPLETED').length;
+    user.activeJobs = allMyJobs.filter((j: any) => j.status === 'OPEN' || j.status === 'NEGOTIATING').length;
     const { data: neg } = await supabase
       .from('negotiations')
       .select('id, job_id')
@@ -436,7 +440,15 @@ export const api = {
   getUserProfile: async (userId: string): Promise<{ user: User }> => {
     const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
     if (error) throw error;
-    return { user: mapUser(data) };
+    const { data: jobs } = await supabase.from('jobs').select('status').eq('client_id', userId);
+    const allJobs = jobs ?? [];
+    const completedCount = allJobs.filter((j: any) => j.status === 'COMPLETED').length;
+    const openCount = allJobs.filter((j: any) => j.status === 'OPEN').length;
+    const negotiatingCount = allJobs.filter((j: any) => j.status === 'NEGOTIATING').length;
+    const user = mapUser(data);
+    user.completedJobs = completedCount;
+    user.activeJobs = openCount + negotiatingCount;
+    return { user };
   },
 
   getPublicClientProfile: async (clientId: string) => {
