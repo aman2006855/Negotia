@@ -33,7 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <TopHeader />
       <div className="flex-1 flex flex-col overflow-hidden pt-12">
         <TopBanner />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col pb-20">{children}</main>
       </div>
       <BottomNav />
       <Toast />
