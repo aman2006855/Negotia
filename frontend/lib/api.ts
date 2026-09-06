@@ -347,7 +347,7 @@ export const api = {
   confirmProject: async (projectId: string): Promise<{ project: Project }> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const { data: proj } = await supabase.from('projects').select('client_id, freelancer_id, client_confirmed, freelancer_confirmed').eq('id', projectId).single();
+    const { data: proj } = await supabase.from('projects').select('client_id, freelancer_id, client_confirmed, freelancer_confirmed, job_id').eq('id', projectId).single();
     if (!proj) throw new Error('Project not found');
     const p = proj as any;
     const isClient = p.client_id === session.user.id;
@@ -359,6 +359,9 @@ export const api = {
     const u = updated as any;
     if (u.client_confirmed && u.freelancer_confirmed) {
       await supabase.from('projects').update({ status: 'COMPLETED', progress: 100 }).eq('id', projectId);
+      if (p.job_id) {
+        await supabase.from('jobs').update({ status: 'COMPLETED' }).eq('id', p.job_id);
+      }
     }
     return api.getProject(projectId);
   },
