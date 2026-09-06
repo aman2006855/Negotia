@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { CldUploadWidget } from 'next-cloudinary';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import type { ChatMessage, NegotiationState } from '@/lib/types';
-import { SendIcon, CheckIcon, XIcon } from './icons';
+import { SendIcon, CheckIcon, XIcon, CameraIcon } from './icons';
 import { formatBudget } from '@/lib/constants';
 import { AgreementModal } from './AgreementModal';
 
@@ -82,6 +83,21 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
     } catch (err) {
       console.error('Failed to send message:', err);
       setInput(body);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleSendImage(imageUrl: string) {
+    setSending(true);
+    try {
+      const msg = await api.sendMessage(state.negotiationId, '', imageUrl);
+      setState((prev) => {
+        if (prev.messages.some((m) => m.id === msg.id)) return prev;
+        return { ...prev, messages: [...prev.messages, msg] };
+      });
+    } catch (err) {
+      console.error('Failed to send image:', err);
     } finally {
       setSending(false);
     }
@@ -217,13 +233,16 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
 
               return (
                 <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'} ${showTail ? 'mt-3' : 'mt-0.5'}`}>
-                  <div className={`max-w-[78%] px-3 py-2 ${
+                  <div className={`max-w-[78%] ${
                     mine
                       ? 'bg-accent-600 text-white rounded-2xl rounded-br-md'
                       : 'bg-inset text-txt-primary rounded-2xl rounded-bl-md'
-                  }`}>
-                    <p className="text-[13.5px] leading-relaxed break-words">{msg.body}</p>
-                    <p className={`mt-0.5 text-[10px] text-right ${mine ? 'text-white/50' : 'text-txt-tertiary'}`}>
+                  } overflow-hidden`}>
+                    {msg.imageUrl && (
+                      <img src={msg.imageUrl} alt="Photo" className="max-w-full rounded-t-2xl cursor-pointer" onClick={() => window.open(msg.imageUrl, '_blank')} />
+                    )}
+                    {msg.body && <p className="text-[13.5px] leading-relaxed break-words px-3 py-2">{msg.body}</p>}
+                    <p className={`text-[10px] text-right ${msg.body ? 'px-3 pb-1 -mt-1' : 'px-3 py-1.5'} ${mine ? 'text-white/50' : 'text-txt-tertiary'}`}>
                       {formatTime(msg.createdAt)}
                     </p>
                   </div>
@@ -251,6 +270,28 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
               </div>
 
               <div className="flex items-center gap-2">
+                <CldUploadWidget
+                  uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                  onUpload={(result: any) => {
+                    if (result.info?.secure_url) {
+                      handleSendImage(result.info.secure_url);
+                    }
+                    document.body.style.overflow = '';
+                  }}
+                  onOpen={() => { document.body.style.overflow = 'hidden'; }}
+                  onClose={() => { document.body.style.overflow = ''; }}
+                >
+                  {({ open }) => (
+                    <button
+                      onClick={() => open()}
+                      disabled={sending}
+                      className="rounded-full border border-border-subtle bg-surface p-2.5 text-txt-secondary transition hover:bg-inset hover:text-txt-primary disabled:opacity-40"
+                      aria-label="Send photo"
+                    >
+                      <CameraIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </CldUploadWidget>
                 <input
                   type="text"
                   value={input}
@@ -262,7 +303,7 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
                 />
                 <button
                   onClick={handleSend}
-                  disabled={!input.trim() || sending}
+                  disabled={(!input.trim() && !sending) || sending}
                   className="rounded-full bg-accent-600 p-2.5 text-white transition hover:bg-accent-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-soft"
                 >
                   {sending ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent block" /> : <SendIcon className="h-4 w-4" />}

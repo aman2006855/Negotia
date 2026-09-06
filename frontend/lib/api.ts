@@ -202,11 +202,11 @@ export const api = {
     const { data: senderUsers } = await supabase.from('users').select('id, name');
     const userMap: Record<string, string> = {};
     (senderUsers ?? []).forEach((u: any) => { userMap[u.id] = u.name; });
-    const { data: msgs } = await supabase.from('negotiation_messages').select('id, sender_id, body, created_at').eq('negotiation_id', n.id).order('created_at', { ascending: true });
+    const { data: msgs } = await supabase.from('negotiation_messages').select('id, sender_id, body, image_url, created_at').eq('negotiation_id', n.id).order('created_at', { ascending: true });
     return {
       negotiationId: n.id, myRole, outcome: n.outcome, closedAt: n.closed_at,
       job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id, freelancerName: (freelancerUser as any)?.name ?? 'Freelancer', freelancerId: n.freelancer_id, freelancerAvatar: (freelancerUser as any)?.avatar_url ?? undefined, currency: j.currency ?? 'USD' },
-      messages: (msgs ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, senderName: userMap[m.sender_id] ?? 'User', body: m.body, createdAt: m.created_at })),
+      messages: (msgs ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, senderName: userMap[m.sender_id] ?? 'User', body: m.body, imageUrl: m.image_url ?? undefined, createdAt: m.created_at })),
     };
   },
 
@@ -244,17 +244,17 @@ export const api = {
     return results;
   },
 
-  sendMessage: async (negotiationId: string, body: string) => {
+  sendMessage: async (negotiationId: string, body: string, imageUrl?: string) => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase
       .from('negotiation_messages')
-      .insert({ negotiation_id: negotiationId, sender_id: session.user.id, body })
-      .select('id, sender_id, body, created_at')
+      .insert({ negotiation_id: negotiationId, sender_id: session.user.id, body: body || '', image_url: imageUrl || null })
+      .select('id, sender_id, body, image_url, created_at')
       .single();
     if (error) throw error;
     const m = data as any;
-    return { id: m.id, senderId: m.sender_id, senderName: session.user.user_metadata?.name ?? 'User', body: m.body, createdAt: m.created_at };
+    return { id: m.id, senderId: m.sender_id, senderName: session.user.user_metadata?.name ?? 'User', body: m.body, imageUrl: m.image_url ?? undefined, createdAt: m.created_at };
   },
 
   subscribeToMessages: (negotiationId: string, onMessage: (msg: ChatMessage) => void) => {
@@ -273,6 +273,7 @@ export const api = {
           senderId: m.sender_id,
           senderName: (user as any)?.name ?? 'User',
           body: m.body,
+          imageUrl: m.image_url ?? undefined,
           createdAt: m.created_at,
         });
       })
