@@ -10,11 +10,18 @@ import { SendIcon, CheckIcon, XIcon } from './icons';
 import { formatBudget } from '@/lib/constants';
 import { AgreementModal } from './AgreementModal';
 
-const QUICK_REPLIES = [
+const FREELANCER_REPLIES = [
   'Can you share the Figma file?',
   'Is the budget negotiable?',
   "What's your timeline?",
   'Can we start this week?',
+];
+
+const CLIENT_REPLIES = [
+  'When can you start?',
+  'What tools do you use?',
+  'Can you share past work?',
+  'Looks good, let\'s proceed!',
 ];
 
 function formatTime(dateStr: string) {
@@ -38,6 +45,8 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
   const isFreelancer = state.myRole === 'FREELANCER' && !state.outcome;
   const clientId = state.job.clientId;
   const clientName = state.job.clientName;
+  const freelancerName = state.job.freelancerName;
+  const freelancerAvatar = state.job.freelancerAvatar;
 
   // Subscribe to real-time messages via Supabase Realtime
   useEffect(() => {
@@ -115,8 +124,10 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
     }
   }
 
-  const otherName = isFreelancer ? clientName : (state.messages.find((m) => m.senderId !== myUserId)?.senderName || 'Client');
+  const otherName = isFreelancer ? clientName : freelancerName;
+  const otherAvatar = isFreelancer ? undefined : freelancerAvatar;
   const otherInitials = otherName.split(' ').map((n) => n[0]).join('').slice(0, 2);
+  const quickReplies = isFreelancer ? FREELANCER_REPLIES : CLIENT_REPLIES;
 
   return (
     <>
@@ -125,9 +136,13 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
         <div className="shrink-0 border-b border-border-subtle bg-surface px-4 py-2.5 z-10">
           <div className="mx-auto flex max-w-2xl items-center gap-3">
             <Link href={isFreelancer ? `/client/${clientId}` : '#'} className="flex items-center gap-3 min-w-0 flex-1">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-50 text-sm font-bold text-accent-700 dark:bg-accent-50/20 dark:text-accent-400">
-                {otherInitials}
-              </span>
+              {otherAvatar ? (
+                <img src={otherAvatar} alt={otherName} className="h-9 w-9 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-50 text-sm font-bold text-accent-700 dark:bg-accent-50/20 dark:text-accent-400">
+                  {otherInitials}
+                </span>
+              )}
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-txt-primary truncate">{otherName}</p>
@@ -224,7 +239,7 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
           <div className="shrink-0 border-t border-border-subtle bg-surface px-4 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
             <div className="mx-auto max-w-2xl">
               <div className="mb-2 flex gap-1.5 overflow-x-auto scrollbar-thin pb-0.5">
-                {QUICK_REPLIES.map((reply) => (
+                {quickReplies.map((reply) => (
                   <button
                     key={reply}
                     onClick={() => setInput(reply)}

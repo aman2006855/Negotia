@@ -88,6 +88,9 @@ export interface NegotiationState {
     agreementText: string;
     clientName: string;
     clientId: string;
+    freelancerName: string;
+    freelancerId: string;
+    freelancerAvatar?: string;
     currency?: string;
   };
   messages: ChatMessage[];

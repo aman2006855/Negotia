@@ -198,13 +198,14 @@ export const api = {
     const { data: job } = await supabase.from('jobs').select('id, title, description, budget_cents, agreement_text, client_id, currency').eq('id', n.job_id).single();
     const j = job as any;
     const { data: clientUser } = await supabase.from('users').select('name').eq('id', j.client_id).single();
+    const { data: freelancerUser } = await supabase.from('users').select('id, name, avatar_url').eq('id', n.freelancer_id).single();
     const { data: senderUsers } = await supabase.from('users').select('id, name');
     const userMap: Record<string, string> = {};
     (senderUsers ?? []).forEach((u: any) => { userMap[u.id] = u.name; });
     const { data: msgs } = await supabase.from('negotiation_messages').select('id, sender_id, body, created_at').eq('negotiation_id', n.id).order('created_at', { ascending: true });
     return {
       negotiationId: n.id, myRole, outcome: n.outcome, closedAt: n.closed_at,
-      job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id, currency: j.currency ?? 'USD' },
+      job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id, freelancerName: (freelancerUser as any)?.name ?? 'Freelancer', freelancerId: n.freelancer_id, freelancerAvatar: (freelancerUser as any)?.avatar_url ?? undefined, currency: j.currency ?? 'USD' },
       messages: (msgs ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, senderName: userMap[m.sender_id] ?? 'User', body: m.body, createdAt: m.created_at })),
     };
   },
