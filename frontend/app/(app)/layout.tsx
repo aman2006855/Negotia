@@ -10,11 +10,13 @@ import { useBoard } from '@/lib/store';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const setUser = useBoard((s) => s.setUser);
+  const acquireLock = useBoard((s) => s.acquireLock);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     api.me().then((me) => {
       if (me.user) setUser(me.user);
+      if (me.activeJob) acquireLock(me.activeJob.jobId, me.activeJob.negotiationId);
     }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
 
