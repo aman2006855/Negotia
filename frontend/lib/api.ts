@@ -133,7 +133,7 @@ export const api = {
     const { data: myJobs } = await supabase.from('jobs').select('status').eq('client_id', session.user.id);
     const allMyJobs = myJobs ?? [];
     user.completedJobs = allMyJobs.filter((j: any) => j.status === 'COMPLETED').length;
-    user.activeJobs = allMyJobs.filter((j: any) => j.status === 'OPEN' || j.status === 'NEGOTIATING').length;
+    user.activeJobs = allMyJobs.filter((j: any) => j.status === 'OPEN' || j.status === 'NEGOTIATING' || j.status === 'IN_PROGRESS').length;
     const { data: neg } = await supabase
       .from('negotiations')
       .select('id, job_id')
@@ -495,9 +495,10 @@ export const api = {
     const completedCount = allJobs.filter((j: any) => j.status === 'COMPLETED').length;
     const openCount = allJobs.filter((j: any) => j.status === 'OPEN').length;
     const negotiatingCount = allJobs.filter((j: any) => j.status === 'NEGOTIATING').length;
+    const inProgressCount = allJobs.filter((j: any) => j.status === 'IN_PROGRESS').length;
     const user = mapUser(data);
     user.completedJobs = completedCount;
-    user.activeJobs = openCount + negotiatingCount;
+    user.activeJobs = openCount + negotiatingCount + inProgressCount;
     return { user };
   },
 
