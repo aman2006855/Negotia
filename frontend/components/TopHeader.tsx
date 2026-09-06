@@ -46,16 +46,22 @@ export function TopHeader() {
             className={`relative flex items-center gap-1.5 rounded-xl transition-all duration-200 ${
               !isMarketplace
                 ? 'h-9 px-3 nav-shine-btn text-accent-600 dark:text-accent-400 font-semibold text-xs'
-                : 'h-8 w-8 justify-center text-txt-secondary hover:bg-inset hover:text-txt-primary'
+                : 'h-9 px-3 text-txt-secondary hover:bg-inset hover:text-txt-primary font-semibold text-xs'
             }`}
             aria-label={isMarketplace ? 'Switch to Jobs' : 'Switch to Marketplace'}
           >
             {isMarketplace ? (
-              <BriefcaseIcon className="h-[18px] w-[18px]" />
+              <>
+                <BriefcaseIcon className="h-[18px] w-[18px]" />
+                <span className="hidden sm:inline">Jobs</span>
+              </>
             ) : (
               <>
                 <StoreIcon className="h-[18px] w-[18px]" />
                 <span className="hidden sm:inline">Store</span>
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[8px] font-bold text-white shadow-md animate-bounce">
+                  NEW
+                </span>
               </>
             )}
           </Link>
