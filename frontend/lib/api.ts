@@ -393,10 +393,10 @@ export const api = {
     return api.getProject(projectId);
   },
 
-  sendWorkspaceMessage: async (projectId: string, body: string): Promise<{ project: Project }> => {
+  sendWorkspaceMessage: async (projectId: string, body: string, imageUrl?: string): Promise<{ project: Project }> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const { error } = await supabase.from('workspace_messages').insert({ project_id: projectId, sender_id: session.user.id, body });
+    const { error } = await supabase.from('workspace_messages').insert({ project_id: projectId, sender_id: session.user.id, body: body || '', image_url: imageUrl || null });
     if (error) throw error;
     return api.getProject(projectId);
   },

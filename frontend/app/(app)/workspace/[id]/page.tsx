@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { CldUploadWidget } from 'next-cloudinary';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { ArrowLeftIcon, CheckIcon, PlusIcon, SendIcon } from '@/components/icons';
+import { ArrowLeftIcon, CheckIcon, PlusIcon, SendIcon, CameraIcon } from '@/components/icons';
 import type { Project } from '@/lib/types';
 
 function formatBudget(cents: number) {
@@ -47,6 +48,12 @@ export default function WorkspaceDetailPage() {
     const result = await api.sendWorkspaceMessage(project.id, input.trim());
     setProject(result.project);
     setInput('');
+  }
+
+  async function handleSendImage(imageUrl: string) {
+    if (!project) return;
+    const result = await api.sendWorkspaceMessage(project.id, '', imageUrl);
+    setProject(result.project);
   }
 
   async function handleToggleMilestone(milestoneId: string) {
@@ -142,18 +149,46 @@ export default function WorkspaceDetailPage() {
             const mine = msg.senderId === user?.id;
             return (
               <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-xl px-3 py-2 ${
+                <div className={`max-w-[80%] rounded-xl overflow-hidden ${
                   mine ? 'bg-accent-600 text-white rounded-br-sm' : 'bg-inset text-txt-primary rounded-bl-sm'
                 }`}>
-                  <p className="text-xs font-medium mb-0.5">{msg.senderName}</p>
-                  <p className="text-sm">{msg.body}</p>
-                  <p className={`text-[10px] mt-1 ${mine ? 'text-white/60' : 'text-txt-tertiary'}`}>{formatTime(msg.createdAt)}</p>
+                  {(msg as any).imageUrl && (
+                    <img src={(msg as any).imageUrl} alt="Photo" className="max-w-full cursor-pointer" onClick={() => window.open((msg as any).imageUrl, '_blank')} />
+                  )}
+                  {msg.body && (
+                    <>
+                      <p className="text-xs font-medium mb-0.5 px-3 pt-2">{msg.senderName}</p>
+                      <p className="text-sm px-3 pb-2">{msg.body}</p>
+                    </>
+                  )}
+                  <p className={`text-[10px] px-3 pb-1.5 ${mine ? 'text-white/60' : 'text-txt-tertiary'}`}>{formatTime(msg.createdAt)}</p>
                 </div>
               </div>
             );
           })}
         </div>
         <div className="flex items-center gap-2">
+          <CldUploadWidget
+            uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
+            onUpload={(result: any) => {
+              if (result.info?.secure_url) {
+                handleSendImage(result.info.secure_url);
+              }
+              document.body.style.overflow = '';
+            }}
+            onOpen={() => { document.body.style.overflow = 'hidden'; }}
+            onClose={() => { document.body.style.overflow = ''; }}
+          >
+            {({ open }) => (
+              <button
+                onClick={() => open()}
+                className="rounded-full border border-border-subtle bg-surface p-2.5 text-txt-secondary transition hover:bg-inset hover:text-txt-primary"
+                aria-label="Send photo"
+              >
+                <CameraIcon className="h-4 w-4" />
+              </button>
+            )}
+          </CldUploadWidget>
           <input
             type="text"
             value={input}
