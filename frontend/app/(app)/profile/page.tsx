@@ -202,8 +202,8 @@ function ProfileContent() {
             <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">{isFreelancer ? 'Completed' : 'Posted'}</div>
           </div>
           <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
-            <div className="text-lg font-bold text-txt-primary">{isFreelancer ? u.activeJobs : (u.openJobs ?? u.activeJobs)}</div>
-            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">{isFreelancer ? 'Active' : 'Open'}</div>
+            <div className="text-lg font-bold text-txt-primary">{u.activeJobs}</div>
+            <div className="text-[11px] font-medium text-txt-tertiary mt-0.5">Active</div>
           </div>
           {isOwnProfile && isFreelancer && (
             <div className="rounded-xl bg-surface border border-border-subtle p-3.5 text-center shadow-soft">
