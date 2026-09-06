@@ -6,6 +6,17 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { ArrowLeftIcon, CameraIcon } from '@/components/icons';
+import type { SocialLinks } from '@/lib/types';
+
+const DEFAULT_SOCIAL: SocialLinks = { instagram: '', twitter: '', github: '', whatsapp: '', linkedin: '' };
+
+const SOCIAL_FIELDS: { key: keyof SocialLinks; label: string; placeholder: string }[] = [
+  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/yourname' },
+  { key: 'twitter', label: 'Twitter (X)', placeholder: 'https://x.com/yourname' },
+  { key: 'github', label: 'GitHub', placeholder: 'https://github.com/yourname' },
+  { key: 'whatsapp', label: 'WhatsApp', placeholder: '+1 234 567 8900' },
+  { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/yourname' },
+];
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -18,6 +29,9 @@ export default function EditProfilePage() {
   const [about, setAbout] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('');
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState('');
+  const [coverPreview, setCoverPreview] = useState('');
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({ ...DEFAULT_SOCIAL });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +61,9 @@ export default function EditProfilePage() {
       setAbout(user.about || '');
       setAvatarUrl(user.avatar || '');
       setAvatarPreview(user.avatar || '');
+      setCoverPhotoUrl(user.coverPhotoUrl || '');
+      setCoverPreview(user.coverPhotoUrl || '');
+      setSocialLinks({ ...DEFAULT_SOCIAL, ...(user.socialLinks || {}) });
       originalUsername.current = user.username || '';
     }
   }, [user]);
@@ -84,6 +101,18 @@ export default function EditProfilePage() {
     }
   }
 
+  function handleCoverUpload(result: any) {
+    const info = result?.info;
+    if (info?.secure_url) {
+      setCoverPhotoUrl(info.secure_url);
+      setCoverPreview(info.secure_url);
+    }
+  }
+
+  function updateSocial(key: keyof SocialLinks, value: string) {
+    setSocialLinks((prev) => ({ ...prev, [key]: value }));
+  }
+
   async function handleSave() {
     setError('');
     if (!fullName.trim() || fullName.trim().length < 2) {
@@ -101,15 +130,19 @@ export default function EditProfilePage() {
 
     setSaving(true);
     try {
-      const updatePayload: any = {
+      const cleanedSocial: SocialLinks = {};
+      Object.entries(socialLinks).forEach(([k, v]) => {
+        if (v && v.trim()) cleanedSocial[k as keyof SocialLinks] = v.trim();
+      });
+
+      const { user: updatedUser } = await api.updateProfile({
         fullName: fullName.trim(),
         username,
         about: about.trim() || undefined,
-      };
-      if (avatarUrl) {
-        updatePayload.avatar = avatarUrl;
-      }
-      const { user: updatedUser } = await api.updateProfile(updatePayload);
+        avatar: avatarUrl || undefined,
+        coverPhotoUrl: coverPhotoUrl || undefined,
+        socialLinks: Object.keys(cleanedSocial).length > 0 ? cleanedSocial : undefined,
+      } as any);
       if (updatedUser) setUser(updatedUser);
       showToast('Profile updated');
       router.push('/profile');
@@ -122,6 +155,7 @@ export default function EditProfilePage() {
   }
 
   const initials = (fullName || username || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const coverHeight = 'h-40 sm:h-48';
 
   if (loading) {
     return (
@@ -150,55 +184,76 @@ export default function EditProfilePage() {
         </div>
       )}
 
-      {/* ─── Avatar Upload Section ─── */}
-      <div className="card p-6 sm:p-8 mb-5">
-        <div className="flex flex-col items-center">
-          <div className="relative group">
+      {/* ─── Cover Photo + Avatar ─── */}
+      <div className="card overflow-hidden mb-5">
+        {/* Cover Photo */}
+        <div className={`relative ${coverHeight} group`}>
+          {coverPreview ? (
+            <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-accent-600 via-accent-500 to-blue-500" />
+          )}
+          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <CldUploadWidget
+              uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
+              options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 3 }}
+              onSuccess={handleCoverUpload}
+            >
+              {({ open }) => (
+                <button onClick={() => open()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/90 backdrop-blur px-4 py-2 text-xs font-semibold text-gray-800 hover:bg-white transition-colors shadow-lg">
+                  <CameraIcon className="h-3.5 w-3.5" /> Change Cover Photo
+                </button>
+              )}
+            </CldUploadWidget>
+          </div>
+          {!coverPreview && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <CldUploadWidget
+                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
+                options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 3 }}
+                onSuccess={handleCoverUpload}
+              >
+                {({ open }) => (
+                  <button onClick={() => open()}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 backdrop-blur border border-white/30 px-4 py-2 text-xs font-semibold text-white hover:bg-white/30 transition-colors">
+                    <CameraIcon className="h-3.5 w-3.5" /> Add Cover Photo
+                  </button>
+                )}
+              </CldUploadWidget>
+            </div>
+          )}
+        </div>
+
+        {/* Avatar (overlapping cover) */}
+        <div className="relative px-6 -mt-10 pb-4">
+          <div className="relative inline-block group">
             {avatarPreview ? (
               <img src={avatarPreview} alt="Avatar"
-                className="h-24 w-24 rounded-full object-cover border-4 border-surface shadow-medium" />
+                className="h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover border-4 border-surface shadow-medium" />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-surface bg-accent-100 text-2xl font-bold text-accent-700 shadow-medium">
+              <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full border-4 border-surface bg-accent-100 text-2xl sm:text-3xl font-bold text-accent-700 shadow-medium">
                 {initials}
               </div>
             )}
             <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <CameraIcon className="h-6 w-6 text-white" />
+              <CameraIcon className="h-5 w-5 text-white" />
+            </div>
+            <div className="absolute -bottom-1 -right-1">
+              <CldUploadWidget
+                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
+                options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 1 }}
+                onSuccess={handleAvatarUpload}
+              >
+                {({ open }) => (
+                  <button onClick={() => open()}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-600 text-white shadow-md hover:bg-accent-700 transition-colors border-2 border-surface">
+                    <CameraIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </CldUploadWidget>
             </div>
           </div>
-
-          <CldUploadWidget
-            uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
-            options={{
-              maxFiles: 1,
-              resourceType: 'image',
-              cropping: true,
-              croppingCoordinatesMode: 'face',
-              croppingAspectRatio: 1,
-              styles: {
-                palette: {
-                  window: '#ffffff',
-                  sourceBg: '#f8fafc',
-                  windowBorder: '#e2e8f0',
-                  tabIcon: '#6366f1',
-                  menuIcons: '#64748b',
-                  textDark: '#1e293b',
-                  textLight: '#ffffff',
-                  activeTabIcon: '#4f46e5',
-                },
-              },
-            }}
-            onSuccess={(result) => handleAvatarUpload(result)}
-          >
-            {({ open }) => (
-              <button onClick={() => open()}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-surface px-4 py-2 text-xs font-medium text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all">
-                <CameraIcon className="h-3.5 w-3.5" />
-                Change Photo
-              </button>
-            )}
-          </CldUploadWidget>
-          <p className="text-[11px] text-txt-tertiary mt-2">JPG, PNG or GIF. Max 5MB. Face crop recommended.</p>
         </div>
       </div>
 
@@ -242,6 +297,21 @@ export default function EditProfilePage() {
             className="input-field resize-none py-3" rows={4}
             placeholder="Tell others about yourself, your expertise, and what you're looking for..." />
           <p className="mt-1.5 text-xs text-txt-tertiary">{about.length}/500</p>
+        </div>
+      </div>
+
+      {/* ─── Social Links ─── */}
+      <div className="card p-6 sm:p-8 mt-5">
+        <h2 className="text-sm font-semibold text-txt-primary mb-4">Social Profiles</h2>
+        <div className="space-y-4">
+          {SOCIAL_FIELDS.map((field) => (
+            <div key={field.key}>
+              <label className="label capitalize">{field.label}</label>
+              <input type="url" value={socialLinks[field.key] || ''}
+                onChange={(e) => updateSocial(field.key, e.target.value)}
+                className="input-field py-2.5 text-sm" placeholder={field.placeholder} />
+            </div>
+          ))}
         </div>
       </div>
 

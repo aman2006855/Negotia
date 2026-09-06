@@ -5,6 +5,14 @@ export type MilestoneStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type NegotiationOutcome = 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
 export type ThemeMode = 'light' | 'dark';
 
+export type SocialLinks = {
+  instagram?: string;
+  twitter?: string;
+  github?: string;
+  whatsapp?: string;
+  linkedin?: string;
+};
+
 export interface User {
   id: string;
   name: string;
@@ -13,6 +21,8 @@ export interface User {
   email: string;
   role: Role;
   avatar?: string;
+  coverPhotoUrl?: string;
+  socialLinks?: SocialLinks;
   entityType?: 'INDIVIDUAL' | 'COMPANY';
   companyName?: string;
   industry?: string;

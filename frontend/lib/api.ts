@@ -5,7 +5,9 @@ function mapUser(u: any): User {
   return {
     id: u.id, name: u.name, fullName: u.full_name ?? u.name, username: u.username,
     email: u.email, role: u.role,
-    avatar: u.avatar_url, skills: u.skills ?? [],
+    avatar: u.avatar_url, coverPhotoUrl: u.cover_photo_url,
+    socialLinks: u.social_links ?? {},
+    skills: u.skills ?? [],
     entityType: u.entity_type, companyName: u.company_name,
     industry: u.industry, companySize: u.company_size,
     budgetRange: u.budget_range, workStyle: u.work_style,
@@ -58,6 +60,8 @@ export const api = {
     if (data.username !== undefined) updateData.username = data.username;
     if (data.role !== undefined) updateData.role = data.role;
     if (data.avatar !== undefined) updateData.avatar_url = data.avatar;
+    if (data.coverPhotoUrl !== undefined) updateData.cover_photo_url = data.coverPhotoUrl;
+    if (data.socialLinks !== undefined) updateData.social_links = data.socialLinks;
     if (data.entityType !== undefined) updateData.entity_type = data.entityType;
     if (data.companyName !== undefined) updateData.company_name = data.companyName;
     if (data.industry !== undefined) updateData.industry = data.industry;

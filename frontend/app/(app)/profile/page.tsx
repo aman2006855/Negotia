@@ -4,12 +4,24 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { StarIcon, ShareIcon, LogOutIcon, SunIcon, MoonIcon, ExternalLinkIcon, PencilIcon } from '@/components/icons';
+import {
+  StarIcon, ShareIcon, LogOutIcon, SunIcon, MoonIcon,
+  ExternalLinkIcon, PencilIcon, InstagramIcon, TwitterIcon,
+  GithubIcon, WhatsAppIcon, LinkedinIcon,
+} from '@/components/icons';
 import { signOut } from '@/lib/supabase';
-import type { Review, User } from '@/lib/types';
+import type { Review, User, SocialLinks } from '@/lib/types';
 import { Suspense } from 'react';
 
 const EXP_LABEL: Record<string, string> = { '0-1': '0–1 years', '1-3': '1–3 years', '3+': '3+ years' };
+
+const SOCIAL_CONFIG: { key: keyof SocialLinks; Icon: typeof InstagramIcon; label: string }[] = [
+  { key: 'instagram', Icon: InstagramIcon, label: 'Instagram' },
+  { key: 'twitter', Icon: TwitterIcon, label: 'Twitter' },
+  { key: 'github', Icon: GithubIcon, label: 'GitHub' },
+  { key: 'whatsapp', Icon: WhatsAppIcon, label: 'WhatsApp' },
+  { key: 'linkedin', Icon: LinkedinIcon, label: 'LinkedIn' },
+];
 
 export default function ProfilePage() {
   return (
@@ -86,26 +98,35 @@ function ProfileContent() {
   const u = profileUser;
   const initials = (u.fullName || u.name || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
   const displayName = u.fullName || u.name || 'Add your name';
+  const socials = u.socialLinks || {};
+  const hasSocialLinks = SOCIAL_CONFIG.some((s) => socials[s.key]);
 
   return (
     <div className="pb-24 max-w-2xl mx-auto">
-      {/* ─── Banner + Avatar ─── */}
-      <div className="relative">
-        <div className="h-32 sm:h-40 rounded-t-2xl bg-gradient-to-r from-accent-600 via-accent-500 to-blue-500" />
-        <div className="absolute -bottom-10 left-6">
-          {u.avatar ? (
-            <img src={u.avatar} alt={displayName}
-              className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-surface object-cover shadow-medium" />
-          ) : (
-            <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full border-4 border-surface bg-accent-100 text-2xl sm:text-3xl font-bold text-accent-700 shadow-medium">
-              {initials}
-            </div>
-          )}
-        </div>
+      {/* ─── Dynamic Cover Banner ─── */}
+      <div className="relative h-32 sm:h-40 rounded-t-2xl overflow-hidden">
+        {u.coverPhotoUrl ? (
+          <img src={u.coverPhotoUrl} alt="Cover"
+            className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-accent-600 via-accent-500 to-blue-500" />
+        )}
+      </div>
+
+      {/* ─── Avatar ─── */}
+      <div className="relative px-6 -mt-10">
+        {u.avatar ? (
+          <img src={u.avatar} alt={displayName}
+            className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-4 border-surface object-cover shadow-medium" />
+        ) : (
+          <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full border-4 border-surface bg-accent-100 text-2xl sm:text-3xl font-bold text-accent-700 shadow-medium">
+            {initials}
+          </div>
+        )}
       </div>
 
       {/* ─── Identity ─── */}
-      <div className="px-6 pt-14 pb-6">
+      <div className="px-6 pt-4 pb-6">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-txt-primary">{displayName}</h1>
@@ -134,6 +155,7 @@ function ProfileContent() {
           </div>
         </div>
 
+        {/* Role & Experience Badges */}
         <div className="flex items-center gap-2.5 mt-3 flex-wrap">
           <span className="inline-flex items-center rounded-full bg-accent-50 px-3 py-1 text-xs font-semibold text-accent-700 border border-accent-200/60">
             {u.role === 'FREELANCER' ? 'Freelancer' : 'Client'}
@@ -149,6 +171,23 @@ function ProfileContent() {
             </span>
           )}
         </div>
+
+        {/* ─── Social Links Bar ─── */}
+        {hasSocialLinks && (
+          <div className="flex items-center justify-center gap-4 mt-4 py-3 border-y border-border-subtle">
+            {SOCIAL_CONFIG.map(({ key, Icon, label }) => {
+              const url = socials[key];
+              if (!url) return null;
+              return (
+                <a key={key} href={url} target="_blank" rel="noopener noreferrer"
+                  title={label}
+                  className="text-txt-tertiary hover:text-accent-600 transition-colors">
+                  <Icon className="h-5 w-5" />
+                </a>
+              );
+            })}
+          </div>
+        )}
 
         {/* Stats */}
         <div className={`grid gap-3 mt-6 ${isOwnProfile ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -169,6 +208,16 @@ function ProfileContent() {
         </div>
       </div>
 
+      {/* ─── About ─── */}
+      {(u.about || u.capabilities) && (
+        <div className="px-6 mb-6">
+          <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
+            <h2 className="text-sm font-semibold text-txt-primary mb-2">About</h2>
+            <p className="text-sm text-txt-secondary leading-relaxed">{u.about || u.capabilities}</p>
+          </div>
+        </div>
+      )}
+
       {/* ─── Skills ─── */}
       {u.skills.length > 0 && (
         <div className="px-6 mb-6">
@@ -181,16 +230,6 @@ function ProfileContent() {
                 </span>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ─── About ─── */}
-      {(u.about || u.capabilities) && (
-        <div className="px-6 mb-6">
-          <div className="rounded-2xl bg-surface border border-border-subtle p-5 shadow-soft">
-            <h2 className="text-sm font-semibold text-txt-primary mb-2">About</h2>
-            <p className="text-sm text-txt-secondary leading-relaxed">{u.about || u.capabilities}</p>
           </div>
         </div>
       )}
