@@ -61,7 +61,7 @@ export default function JobsPage() {
   const firstName = (user?.fullName || user?.name || '').split(' ')[0] || 'there';
 
   return (
-    <div className="page-container">
+    <div className="page-container overflow-x-hidden">
       {/* ─── Personalized Welcome Header ─── */}
       <div className="mb-5">
         <h1 className="text-2xl font-bold text-txt-primary tracking-tight break-words">
@@ -73,7 +73,7 @@ export default function JobsPage() {
       {/* ─── Category Chips ─── */}
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto gap-2.5 pb-2 pt-1 whitespace-nowrap no-scrollbar"
+        className="flex overflow-x-auto gap-2.5 pb-2 pt-1 whitespace-nowrap no-scrollbar -mx-4 px-4"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {CATEGORIES.map((cat) => (
@@ -127,7 +127,7 @@ export default function JobsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 overflow-hidden">
+        <div className="grid gap-3 sm:grid-cols-2 w-full">
           {filtered.map((job) => <JobCard key={job.id} job={job} />)}
         </div>
       )}
