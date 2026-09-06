@@ -38,6 +38,8 @@ export interface User {
   totalEarningsCents: number;
   completedJobs: number;
   activeJobs: number;
+  totalPostedJobs: number;
+  openJobs: number;
   rating: number;
   reviewCount: number;
   createdAt: string;

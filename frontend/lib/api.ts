@@ -15,6 +15,7 @@ function mapUser(u: any): User {
     portfolioLinks: u.portfolio_links ?? [], pastWork: u.past_work ?? [],
     totalEarningsCents: u.total_earnings_cents ?? 0,
     completedJobs: u.completed_jobs ?? 0, activeJobs: u.active_jobs ?? 0,
+    totalPostedJobs: u.total_posted_jobs ?? 0, openJobs: u.open_jobs ?? 0,
     rating: Number(u.rating) || 0, reviewCount: u.review_count ?? 0,
     createdAt: u.created_at,
     profileCompleted: u.profile_completed ?? false,
@@ -134,6 +135,8 @@ export const api = {
     const allMyJobs = myJobs ?? [];
     user.completedJobs = allMyJobs.filter((j: any) => j.status === 'COMPLETED').length;
     user.activeJobs = allMyJobs.filter((j: any) => j.status === 'OPEN' || j.status === 'NEGOTIATING' || j.status === 'IN_PROGRESS').length;
+    user.totalPostedJobs = allMyJobs.length;
+    user.openJobs = allMyJobs.filter((j: any) => j.status === 'OPEN').length;
     const { data: neg } = await supabase
       .from('negotiations')
       .select('id, job_id')
@@ -499,6 +502,8 @@ export const api = {
     const user = mapUser(data);
     user.completedJobs = completedCount;
     user.activeJobs = openCount + negotiatingCount + inProgressCount;
+    user.totalPostedJobs = allJobs.length;
+    user.openJobs = openCount;
     return { user };
   },
 
