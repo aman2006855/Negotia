@@ -1,23 +1,40 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { MessageIcon } from '@/components/icons';
+import type { NegotiationState } from '@/lib/types';
 
 export default function NegotiationPage() {
   const router = useRouter();
-  const negotiation = useBoard((s) => s.negotiation);
-  const myActiveJobId = useBoard((s) => s.myActiveJobId);
-  const jobs = useBoard((s) => s.jobs);
+  const acquireLock = useBoard((s) => s.acquireLock);
+  const setNegotiation = useBoard((s) => s.setNegotiation);
+  const [checking, setChecking] = useState(true);
+  const [hasActive, setHasActive] = useState(false);
 
-  if (negotiation && !negotiation.outcome) {
-    router.replace('/negotiation/chat');
-    return null;
-  }
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await api.joinNegotiation();
+        acquireLock(s.job.id, s.negotiationId);
+        setNegotiation(s);
+        setHasActive(true);
+        router.replace('/negotiation/chat');
+      } catch {
+        setHasActive(false);
+      }
+      setChecking(false);
+    })();
+  }, [acquireLock, setNegotiation, router]);
 
-  if (myActiveJobId) {
-    router.replace('/negotiation/chat');
-    return null;
+  if (checking || hasActive) {
+    return (
+      <div className="page-container flex min-h-[50vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
+      </div>
+    );
   }
 
   return (

@@ -9,27 +9,23 @@ import type { NegotiationState } from '@/lib/types';
 
 export default function NegotiationChatPage() {
   const router = useRouter();
-  const myActiveJobId = useBoard((s) => s.myActiveJobId);
-  const myNegotiationId = useBoard((s) => s.myNegotiationId);
+  const acquireLock = useBoard((s) => s.acquireLock);
   const setNegotiation = useBoard((s) => s.setNegotiation);
   const [state, setState] = useState<NegotiationState | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!myActiveJobId) {
-      router.replace('/negotiation');
-      return;
-    }
     (async () => {
       try {
         const s = await api.joinNegotiation();
         setState(s);
         setNegotiation(s);
+        acquireLock(s.job.id, s.negotiationId);
       } catch {
-        setError('Could not load negotiation');
+        setError('No active negotiation found');
       }
     })();
-  }, [myActiveJobId, setNegotiation, router]);
+  }, [setNegotiation, acquireLock]);
 
   if (error) {
     return (
