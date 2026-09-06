@@ -57,6 +57,7 @@ export const api = {
     if (data.fullName !== undefined) updateData.full_name = data.fullName;
     if (data.username !== undefined) updateData.username = data.username;
     if (data.role !== undefined) updateData.role = data.role;
+    if (data.avatar !== undefined) updateData.avatar_url = data.avatar;
     if (data.entityType !== undefined) updateData.entity_type = data.entityType;
     if (data.companyName !== undefined) updateData.company_name = data.companyName;
     if (data.industry !== undefined) updateData.industry = data.industry;

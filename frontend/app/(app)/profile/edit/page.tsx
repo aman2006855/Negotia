@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { CldUploadWidget } from 'next-cloudinary';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
-import { ArrowLeftIcon } from '@/components/icons';
+import { ArrowLeftIcon, CameraIcon } from '@/components/icons';
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function EditProfilePage() {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [about, setAbout] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +45,8 @@ export default function EditProfilePage() {
       setFullName(user.fullName || user.name || '');
       setUsername(user.username || '');
       setAbout(user.about || '');
+      setAvatarUrl(user.avatar || '');
+      setAvatarPreview(user.avatar || '');
       originalUsername.current = user.username || '';
     }
   }, [user]);
@@ -71,6 +76,14 @@ export default function EditProfilePage() {
     }, 400);
   }, []);
 
+  function handleAvatarUpload(result: any) {
+    const info = result?.info;
+    if (info?.secure_url) {
+      setAvatarUrl(info.secure_url);
+      setAvatarPreview(info.secure_url);
+    }
+  }
+
   async function handleSave() {
     setError('');
     if (!fullName.trim() || fullName.trim().length < 2) {
@@ -88,11 +101,15 @@ export default function EditProfilePage() {
 
     setSaving(true);
     try {
-      const { user: updatedUser } = await api.updateProfile({
+      const updatePayload: any = {
         fullName: fullName.trim(),
         username,
         about: about.trim() || undefined,
-      } as any);
+      };
+      if (avatarUrl) {
+        updatePayload.avatar = avatarUrl;
+      }
+      const { user: updatedUser } = await api.updateProfile(updatePayload);
       if (updatedUser) setUser(updatedUser);
       showToast('Profile updated');
       router.push('/profile');
@@ -103,6 +120,8 @@ export default function EditProfilePage() {
       setSaving(false);
     }
   }
+
+  const initials = (fullName || username || '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   if (loading) {
     return (
@@ -131,6 +150,59 @@ export default function EditProfilePage() {
         </div>
       )}
 
+      {/* ─── Avatar Upload Section ─── */}
+      <div className="card p-6 sm:p-8 mb-5">
+        <div className="flex flex-col items-center">
+          <div className="relative group">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="Avatar"
+                className="h-24 w-24 rounded-full object-cover border-4 border-surface shadow-medium" />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-surface bg-accent-100 text-2xl font-bold text-accent-700 shadow-medium">
+                {initials}
+              </div>
+            )}
+            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <CameraIcon className="h-6 w-6 text-white" />
+            </div>
+          </div>
+
+          <CldUploadWidget
+            uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
+            options={{
+              maxFiles: 1,
+              resourceType: 'image',
+              cropping: true,
+              croppingCoordinatesMode: 'face',
+              croppingAspectRatio: 1,
+              styles: {
+                palette: {
+                  window: '#ffffff',
+                  sourceBg: '#f8fafc',
+                  windowBorder: '#e2e8f0',
+                  tabIcon: '#6366f1',
+                  menuIcons: '#64748b',
+                  textDark: '#1e293b',
+                  textLight: '#ffffff',
+                  activeTabIcon: '#4f46e5',
+                },
+              },
+            }}
+            onSuccess={(result) => handleAvatarUpload(result)}
+          >
+            {({ open }) => (
+              <button onClick={() => open()}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-border-subtle bg-surface px-4 py-2 text-xs font-medium text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all">
+                <CameraIcon className="h-3.5 w-3.5" />
+                Change Photo
+              </button>
+            )}
+          </CldUploadWidget>
+          <p className="text-[11px] text-txt-tertiary mt-2">JPG, PNG or GIF. Max 5MB. Face crop recommended.</p>
+        </div>
+      </div>
+
+      {/* ─── Form Fields ─── */}
       <div className="card p-6 sm:p-8 space-y-5">
         {/* Full Name */}
         <div>
@@ -173,7 +245,7 @@ export default function EditProfilePage() {
         </div>
       </div>
 
-      {/* Actions */}
+      {/* ─── Action Buttons ─── */}
       <div className="flex gap-3 mt-6">
         <button onClick={() => router.push('/profile')}
           className="btn-secondary flex-1 py-3 text-sm font-semibold">
