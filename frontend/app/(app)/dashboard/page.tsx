@@ -50,6 +50,7 @@ export default function DashboardPage() {
         { label: 'Total Earnings', value: formatCents(stats?.totalEarningsCents ?? 0), icon: DollarIcon, color: 'text-success-600 bg-success-50 dark:bg-success-50/20' },
         { label: 'Pending', value: formatCents(stats?.pendingPaymentsCents ?? 0), icon: WalletIcon, color: 'text-warning-600 bg-warning-50 dark:bg-warning-50/20', showPayout: true },
         { label: 'Active Projects', value: String(stats?.activeProjects ?? 0), icon: BriefcaseIcon, color: 'text-accent-600 bg-accent-50 dark:bg-accent-50/20' },
+        { label: 'Completed Projects', value: String(stats?.completedProjects ?? 0), icon: BriefcaseIcon, color: 'text-success-600 bg-success-50 dark:bg-success-50/20' },
         { label: 'Average Rating', value: stats?.averageRating ? `${stats.averageRating.toFixed(1)} ★` : '—', icon: StarIcon, color: 'text-txt-primary bg-inset' },
       ]
     : [

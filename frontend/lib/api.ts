@@ -137,6 +137,10 @@ export const api = {
     user.activeJobs = allMyJobs.filter((j: any) => j.status === 'OPEN' || j.status === 'NEGOTIATING' || j.status === 'IN_PROGRESS').length;
     user.totalPostedJobs = allMyJobs.length;
     user.openJobs = allMyJobs.filter((j: any) => j.status === 'OPEN').length;
+    if (user.role === 'FREELANCER') {
+      const { data: myProjects } = await supabase.from('projects').select('status').eq('freelancer_id', session.user.id);
+      user.completedJobs = (myProjects ?? []).filter((p: any) => p.status === 'COMPLETED').length;
+    }
     const { data: neg } = await supabase
       .from('negotiations')
       .select('id, job_id')
@@ -499,8 +503,10 @@ export const api = {
     const openCount = allJobs.filter((j: any) => j.status === 'OPEN').length;
     const negotiatingCount = allJobs.filter((j: any) => j.status === 'NEGOTIATING').length;
     const inProgressCount = allJobs.filter((j: any) => j.status === 'IN_PROGRESS').length;
+    const { data: myProjects } = await supabase.from('projects').select('status').or(`client_id.eq.${userId},freelancer_id.eq.${userId}`);
+    const completedProjectsCount = (myProjects ?? []).filter((p: any) => p.status === 'COMPLETED').length;
     const user = mapUser(data);
-    user.completedJobs = completedCount;
+    user.completedJobs = (user.role === 'FREELANCER' ? completedProjectsCount : completedCount);
     user.activeJobs = openCount + negotiatingCount + inProgressCount;
     user.totalPostedJobs = allJobs.length;
     user.openJobs = openCount;
