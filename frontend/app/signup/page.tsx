@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { BriefcaseIcon, SearchIcon, XIcon, UserIcon, BuildingIcon } from '@/components/icons';
+import { ArrowLeftIcon } from '@/components/icons';
 import { CustomSelect } from '@/components/CustomSelect';
 
 const VALID_STEPS = ['email', 'password', 'role', 'entity', 'profile'] as const;
 type Step = (typeof VALID_STEPS)[number];
 const STEP_INDEX: Record<Step, number> = { email: 0, password: 1, role: 2, entity: 3, profile: 4 };
+const BACK_MAP: Partial<Record<Step, Step>> = { password: 'email', role: 'password', entity: 'role', profile: 'entity' };
 
 const SKILL_OPTIONS = [
   'React', 'Next.js', 'TypeScript', 'JavaScript', 'Node.js', 'Python', 'Go', 'Rust',
@@ -246,6 +248,15 @@ function SignupContent() {
             <BriefcaseIcon className="h-7 w-7" />
           </div>
         </div>
+
+        {/* Back Navigation */}
+        {step !== 'email' && (
+          <button onClick={() => go(BACK_MAP[step]!)}
+            className="flex items-center gap-1.5 text-sm text-txt-secondary hover:text-txt-primary transition-colors mb-4 -ml-1">
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
+          </button>
+        )}
 
         <div className="text-center mb-2">
           <h1 className="text-2xl font-bold tracking-tight text-txt-primary">{titles[step]}</h1>
