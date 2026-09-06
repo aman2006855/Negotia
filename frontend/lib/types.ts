@@ -49,6 +49,7 @@ export interface FeedJob {
   title: string;
   description: string;
   budgetCents: number;
+  category: string;
   status: JobStatus;
   lockedAt: string | null;
   createdAt: string;

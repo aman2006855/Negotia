@@ -24,7 +24,7 @@ function mapUser(u: any): User {
 function mapFeedJob(j: any): FeedJob {
   return {
     id: j.id, title: j.title, description: j.description,
-    budgetCents: j.budget_cents, status: j.status,
+    budgetCents: j.budget_cents, category: j.category ?? 'All', status: j.status,
     lockedAt: j.locked_at ?? null, createdAt: j.created_at,
     clientId: j.client_id, clientName: j.client_name ?? j.clientName ?? 'Client',
     freelancerId: j.freelancer_id, freelancerName: j.freelancer_name ?? j.freelancerName,

@@ -48,43 +48,43 @@ const MOCK_JOBS: FeedJob[] = [
   {
     id: 'j1', title: 'Design a mobile onboarding flow',
     description: 'Create 4–5 screen mobile onboarding flow with illustrations, progress indicators, and a final CTA. Figma handoff included. Must be accessible (WCAG 2.1 AA).',
-    budgetCents: 180000, status: 'OPEN', lockedAt: null, createdAt: new Date(Date.now() - 3600000).toISOString(),
+    budgetCents: 180000, status: 'OPEN', category: 'UI/UX Design', lockedAt: null, createdAt: new Date(Date.now() - 3600000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen',
   },
   {
     id: 'j2', title: 'Build a REST API for a booking system',
     description: 'Node.js/Express REST API for appointment booking. Features: user auth (JWT), availability slots, booking CRUD, email notifications, rate limiting.',
-    budgetCents: 320000, status: 'OPEN', lockedAt: null, createdAt: new Date(Date.now() - 7200000).toISOString(),
+    budgetCents: 320000, status: 'OPEN', category: 'Web & App', lockedAt: null, createdAt: new Date(Date.now() - 7200000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen',
   },
   {
     id: 'j3', title: 'Refactor jQuery dashboard to React',
     description: 'Migrate legacy jQuery-based admin dashboard to React 18 with TypeScript. ~15 pages, data tables, charts, form builders. Pixel-perfect parity.',
-    budgetCents: 540000, status: 'NEGOTIATING', lockedAt: new Date(Date.now() - 600000).toISOString(), createdAt: new Date(Date.now() - 86400000).toISOString(),
+    budgetCents: 540000, status: 'NEGOTIATING', category: 'Web & App', lockedAt: new Date(Date.now() - 600000).toISOString(), createdAt: new Date(Date.now() - 86400000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen', freelancerId: 'f1', freelancerName: 'Sam Rivera',
   },
   {
     id: 'j4', title: 'Write technical documentation for API',
     description: 'Comprehensive API documentation with examples, error codes, authentication guides, and SDK snippets. OpenAPI/Swagger format preferred.',
-    budgetCents: 95000, status: 'OPEN', lockedAt: null, createdAt: new Date(Date.now() - 1800000).toISOString(),
+    budgetCents: 95000, status: 'OPEN', category: 'Writing', lockedAt: null, createdAt: new Date(Date.now() - 1800000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen',
   },
   {
     id: 'j5', title: 'Set up CI/CD pipeline with GitHub Actions',
     description: 'Configure automated testing, building, and deployment pipeline. Docker containerization, staging and production environments.',
-    budgetCents: 150000, status: 'COMPLETED', lockedAt: null, createdAt: new Date(Date.now() - 172800000).toISOString(),
+    budgetCents: 150000, status: 'COMPLETED', category: 'Web & App', lockedAt: null, createdAt: new Date(Date.now() - 172800000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen', freelancerId: 'f1', freelancerName: 'Sam Rivera',
   },
   {
     id: 'j6', title: 'Design brand identity for SaaS startup',
     description: 'Logo design, color palette, typography system, and brand guidelines document. Must work across web, mobile, and print.',
-    budgetCents: 250000, status: 'OPEN', lockedAt: null, createdAt: new Date(Date.now() - 5400000).toISOString(),
+    budgetCents: 250000, status: 'OPEN', category: 'UI/UX Design', lockedAt: null, createdAt: new Date(Date.now() - 5400000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen',
   },
   {
     id: 'j7', title: 'Build e-commerce product configurator',
     description: 'Interactive product configurator with real-time pricing, image previews, and cart integration. React + Three.js preferred.',
-    budgetCents: 420000, status: 'IN_PROGRESS', lockedAt: null, createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
+    budgetCents: 420000, status: 'IN_PROGRESS', category: 'Web & App', lockedAt: null, createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
     clientId: 'c1', clientName: 'Ava Chen', freelancerId: 'f1', freelancerName: 'Sam Rivera',
   },
 ];
@@ -213,7 +213,7 @@ export const mockApi = {
   createJob: async (data: { title: string; description: string; budgetCents: number; agreementText: string }) => {
     await new Promise((r) => setTimeout(r, 400));
     const job: FeedJob = {
-      id: 'j' + Date.now(), ...data, status: 'OPEN', lockedAt: null,
+      id: 'j' + Date.now(), ...data, status: 'OPEN', category: 'All', lockedAt: null,
       createdAt: new Date().toISOString(), clientId: currentUser?.id ?? 'c1', clientName: currentUser?.name ?? 'Ava Chen',
     };
     MOCK_JOBS.unshift(job);
