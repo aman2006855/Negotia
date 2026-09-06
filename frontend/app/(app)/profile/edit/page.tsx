@@ -93,7 +93,14 @@ export default function EditProfilePage() {
     }, 400);
   }, []);
 
+  function unlockScroll() {
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+  }
+
   function handleAvatarUpload(result: any) {
+    unlockScroll();
     const info = result?.info;
     if (info?.secure_url) {
       setAvatarUrl(info.secure_url);
@@ -102,6 +109,7 @@ export default function EditProfilePage() {
   }
 
   function handleCoverUpload(result: any) {
+    unlockScroll();
     const info = result?.info;
     if (info?.secure_url) {
       setCoverPhotoUrl(info.secure_url);
@@ -199,6 +207,7 @@ export default function EditProfilePage() {
               uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
               options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 3 }}
               onSuccess={handleCoverUpload}
+              onClose={unlockScroll}
             >
               {({ open }) => (
                 <button onClick={() => open()}
@@ -215,6 +224,7 @@ export default function EditProfilePage() {
                 uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
                 options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 3 }}
                 onSuccess={handleCoverUpload}
+                onClose={unlockScroll}
               >
                 {({ open }) => (
                   <button onClick={() => open()}
@@ -246,6 +256,7 @@ export default function EditProfilePage() {
                 uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
                 options={{ maxFiles: 1, resourceType: 'image', cropping: true, croppingAspectRatio: 1 }}
                 onSuccess={handleAvatarUpload}
+                onClose={unlockScroll}
               >
                 {({ open }) => (
                   <button onClick={() => open()}
