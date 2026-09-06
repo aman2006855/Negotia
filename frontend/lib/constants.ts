@@ -1,3 +1,20 @@
+export const JOB_CATEGORIES = [
+  'API & Backend Development',
+  'Full-Stack Web Application',
+  'Landing Page & Marketing Site',
+  'Mobile App Development',
+  'Progressive Web App (PWA)',
+  'Frontend UI/UX Implementation',
+  'Bug Fixing & Code Refactoring',
+  'Scripting & Automation Tools',
+  'Database Design & Migration',
+  'E-Commerce & POS Solutions',
+  'DevOps, Cloud & Deployment',
+  'Technical Writing & Documentation',
+] as const;
+
+export type JobCategory = (typeof JOB_CATEGORIES)[number];
+
 export const SKILL_OPTIONS = [
   'React', 'Next.js', 'Vue.js', 'Angular', 'Svelte',
   'TypeScript', 'JavaScript', 'Python', 'Node.js', 'Go', 'Rust',

@@ -198,12 +198,12 @@ export const api = {
     };
   },
 
-  createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string }) => {
+  createJob: async (d: { title: string; description: string; budgetCents: number; agreementText: string; category: string }) => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
     const { data, error } = await supabase.from('jobs').insert({
       client_id: session.user.id, title: d.title, description: d.description,
-      budget_cents: d.budgetCents, agreement_text: d.agreementText, status: 'OPEN',
+      budget_cents: d.budgetCents, agreement_text: d.agreementText, category: d.category, status: 'OPEN',
     }).select().single();
     if (error) throw error;
     return { job: mapFeedJob({ ...data, client_name: session.user.user_metadata?.name ?? 'Client' }) };

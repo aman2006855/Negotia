@@ -6,9 +6,10 @@ import { useBoard } from '@/lib/store';
 import { JobCard } from '@/components/JobCard';
 import { FilterIcon } from '@/components/icons';
 import { JobFilterSheet } from '@/components/JobFilterSheet';
+import { JOB_CATEGORIES } from '@/lib/constants';
 import type { FeedJob } from '@/lib/types';
 
-const CATEGORIES = ['All', 'Web & App', 'UI/UX Design', 'Video Editing', 'Data Entry', 'Writing', 'Marketing'];
+const CATEGORIES = ['All', ...JOB_CATEGORIES] as const;
 
 export default function JobsPage() {
   const jobs = useBoard((s) => s.jobs);

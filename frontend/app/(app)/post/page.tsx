@@ -5,17 +5,22 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { BriefcaseIcon } from '@/components/icons';
+import { JOB_CATEGORIES } from '@/lib/constants';
 
 export default function PostPage() {
   const router = useRouter();
   const showToast = useBoard((s) => s.showToast);
-  const [form, setForm] = useState({ title: '', description: '', budgetCents: '', agreementText: '' });
+  const [form, setForm] = useState({ title: '', description: '', budgetCents: '', agreementText: '', category: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (!form.category) {
+      setError('Please select a category');
+      return;
+    }
     setLoading(true);
     try {
       await api.createJob({
@@ -23,6 +28,7 @@ export default function PostPage() {
         description: form.description,
         budgetCents: Math.round(parseFloat(form.budgetCents) * 100),
         agreementText: form.agreementText,
+        category: form.category,
       });
       showToast('Job posted successfully');
       router.push('/my-postings');
@@ -52,12 +58,33 @@ export default function PostPage() {
             type="text"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="e.g. Design a mobile onboarding flow"
+            placeholder="e.g. Build a REST API for a booking system"
             required
             minLength={4}
             maxLength={120}
             className="w-full rounded-lg border border-border-subtle bg-surface px-3.5 py-2.5 text-sm"
           />
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-txt-primary">Category <span className="text-danger-500">*</span></label>
+          <p className="mb-2 text-xs text-txt-tertiary">Choose the category that best describes this job.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {JOB_CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setForm({ ...form, category: cat })}
+                className={`rounded-lg border px-3 py-2.5 text-left text-xs font-medium transition-all ${
+                  form.category === cat
+                    ? 'border-accent-500 bg-accent-50 text-accent-700 dark:bg-accent-50/20 dark:text-accent-400 ring-1 ring-accent-500/30'
+                    : 'border-border-subtle bg-surface text-txt-secondary hover:bg-inset hover:border-border-strong'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
