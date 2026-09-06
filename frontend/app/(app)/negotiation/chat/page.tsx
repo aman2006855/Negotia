@@ -9,6 +9,7 @@ import type { NegotiationState } from '@/lib/types';
 
 export default function NegotiationChatPage() {
   const router = useRouter();
+  const myNegotiationId = useBoard((s) => s.myNegotiationId);
   const acquireLock = useBoard((s) => s.acquireLock);
   const setNegotiation = useBoard((s) => s.setNegotiation);
   const [state, setState] = useState<NegotiationState | null>(null);
@@ -17,7 +18,7 @@ export default function NegotiationChatPage() {
   useEffect(() => {
     (async () => {
       try {
-        const s = await api.joinNegotiation();
+        const s = await api.joinNegotiation(myNegotiationId ?? undefined);
         setState(s);
         setNegotiation(s);
         acquireLock(s.job.id, s.negotiationId);
@@ -25,14 +26,14 @@ export default function NegotiationChatPage() {
         setError('No active negotiation found');
       }
     })();
-  }, [setNegotiation, acquireLock]);
+  }, [myNegotiationId, setNegotiation, acquireLock]);
 
   if (error) {
     return (
       <div className="page-container flex min-h-[50vh] flex-col items-center justify-center text-center">
         <p className="text-sm text-danger-600 mb-3">{error}</p>
-        <button onClick={() => router.push('/jobs')} className="btn-primary">
-          Back to board
+        <button onClick={() => router.push('/negotiation')} className="btn-primary">
+          Back to negotiations
         </button>
       </div>
     );

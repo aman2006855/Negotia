@@ -15,6 +15,7 @@ const FREELANCER_TABS = [
 
 const CLIENT_TABS = [
   { href: '/my-postings', label: 'My Posts', icon: BriefcaseIcon },
+  { href: '/negotiation', label: 'Negotiate', icon: MessageIcon },
   { href: '/post', label: 'Post Job', icon: PlusIcon, isCenter: true },
   { href: '/workspace', label: 'Workspace', icon: FolderIcon },
   { href: '/dashboard', label: 'Dashboard', icon: BarChartIcon },

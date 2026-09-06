@@ -175,13 +175,19 @@ export const api = {
     return (data ?? []).map((j: any) => ({ ...mapFeedJob(j), clientName: j.users?.name ?? 'Unknown' }));
   },
 
-  joinNegotiation: async (): Promise<NegotiationState> => {
+  joinNegotiation: async (specificNegotiationId?: string): Promise<NegotiationState> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const { data: neg } = await supabase
+    let negQuery = supabase
       .from('negotiations').select('id, outcome, closed_at, job_id, client_id, freelancer_id')
       .or(`client_id.eq.${session.user.id},freelancer_id.eq.${session.user.id}`)
-      .is('outcome', null).order('created_at', { ascending: false }).limit(1).single();
+      .is('outcome', null).order('created_at', { ascending: false });
+    if (specificNegotiationId) {
+      negQuery = negQuery.eq('id', specificNegotiationId);
+    } else {
+      negQuery = negQuery.limit(1);
+    }
+    const { data: neg } = await negQuery.single();
     if (!neg) throw new Error('No active negotiation');
     const n = neg as any;
     const myRole = n.client_id === session.user.id ? 'CLIENT' : 'FREELANCER';
@@ -197,6 +203,40 @@ export const api = {
       job: { id: j.id, title: j.title, description: j.description, budgetCents: j.budget_cents, agreementText: j.agreement_text, clientName: (clientUser as any)?.name ?? 'Client', clientId: j.client_id, currency: j.currency ?? 'USD' },
       messages: (msgs ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, senderName: userMap[m.sender_id] ?? 'User', body: m.body, createdAt: m.created_at })),
     };
+  },
+
+  getClientNegotiations: async () => {
+    const session = await getSession();
+    if (!session) throw new Error('Not authenticated');
+    const { data: negs } = await supabase
+      .from('negotiations').select('id, outcome, closed_at, job_id, client_id, freelancer_id, created_at')
+      .eq('client_id', session.user.id)
+      .order('created_at', { ascending: false });
+    if (!negs || negs.length === 0) return [];
+    const results = [];
+    for (const n of negs as any[]) {
+      const { data: job } = await supabase.from('jobs').select('id, title, budget_cents, currency, status').eq('id', n.job_id).single();
+      const j = job as any;
+      const { data: freelancer } = await supabase.from('users').select('id, name, avatar_url').eq('id', n.freelancer_id).single();
+      const f = freelancer as any;
+      const { data: lastMsg } = await supabase.from('negotiation_messages').select('body, created_at, sender_id').eq('negotiation_id', n.id).order('created_at', { ascending: false }).limit(1).single();
+      results.push({
+        id: n.id,
+        jobId: n.job_id,
+        jobTitle: j?.title ?? 'Untitled',
+        budgetCents: j?.budget_cents ?? 0,
+        currency: j?.currency ?? 'USD',
+        jobStatus: j?.status ?? 'OPEN',
+        outcome: n.outcome,
+        closedAt: n.closed_at,
+        createdAt: n.created_at,
+        freelancerId: n.freelancer_id,
+        freelancerName: f?.name ?? 'Freelancer',
+        freelancerAvatar: f?.avatar_url,
+        lastMessage: lastMsg ? { body: (lastMsg as any).body, createdAt: (lastMsg as any).created_at, senderId: (lastMsg as any).sender_id } : null,
+      });
+    }
+    return results;
   },
 
   sendMessage: async (negotiationId: string, body: string) => {
