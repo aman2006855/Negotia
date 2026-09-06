@@ -1,7 +1,7 @@
 'use client';
 
 import { XIcon } from './icons';
-import { SKILL_OPTIONS } from '@/lib/mock';
+import { SKILL_OPTIONS } from '@/lib/constants';
 
 interface JobFilterSheetProps {
   sortBy: 'newest' | 'budget-high' | 'budget-low';
