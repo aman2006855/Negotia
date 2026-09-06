@@ -1,30 +1,60 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useBoard } from '@/lib/store';
 import { BriefcaseIcon, StoreIcon } from './icons';
 
+const MARKETPLACE_ROUTES = ['/marketplace', '/launches', '/leaderboard', '/my-store'];
+
 export function TopHeader() {
+  const pathname = usePathname();
   const user = useBoard((s) => s.user);
   const theme = useBoard((s) => s.theme);
   const toggleTheme = useBoard((s) => s.toggleTheme);
 
+  const isMarketplace = MARKETPLACE_ROUTES.some((r) => pathname.startsWith(r));
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border-subtle bg-surface/95 backdrop-blur-lg dark:bg-surface/90">
       <div className="mx-auto flex h-12 max-w-2xl items-center justify-between px-4">
-        <Link href="/jobs" className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-600 text-white shadow-soft">
-            <BriefcaseIcon className="h-4 w-4" />
+        {/* Logo — toggles between Jobs and Marketplace */}
+        <Link href={isMarketplace ? '/jobs' : '/marketplace'} className="flex items-center gap-2">
+          <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-soft transition-colors duration-300 ${
+            isMarketplace ? 'bg-purple-600' : 'bg-accent-600'
+          }`}>
+            {isMarketplace ? (
+              <StoreIcon className="h-4 w-4" />
+            ) : (
+              <BriefcaseIcon className="h-4 w-4" />
+            )}
           </span>
           <span className="text-base font-bold tracking-tight text-txt-primary">Negotia</span>
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full transition-colors duration-300 ${
+            isMarketplace
+              ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300'
+              : 'bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-accent-300'
+          }`}>
+            {isMarketplace ? 'Store' : 'Jobs'}
+          </span>
         </Link>
 
         <div className="flex items-center gap-2">
-          {/* Marketplace Store Link */}
-          <Link href="/marketplace"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-txt-secondary hover:bg-inset hover:text-txt-primary transition-all duration-200"
-            aria-label="Marketplace Store">
-            <StoreIcon className="h-[18px] w-[18px]" />
+          {/* Toggle button — opposite of current view, with shine when inactive */}
+          <Link
+            href={isMarketplace ? '/jobs' : '/marketplace'}
+            className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 ${
+              isMarketplace
+                ? 'text-txt-secondary hover:bg-inset hover:text-txt-primary'
+                : 'text-txt-secondary hover:bg-inset hover:text-txt-primary'
+            } ${isMarketplace ? 'nav-shine-btn nav-glow' : ''}`}
+            aria-label={isMarketplace ? 'Switch to Jobs' : 'Switch to Marketplace'}
+          >
+            {isMarketplace ? (
+              <BriefcaseIcon className="h-[18px] w-[18px]" />
+            ) : (
+              <StoreIcon className="h-[18px] w-[18px]" />
+            )}
           </Link>
 
           {/* Theme Toggle */}

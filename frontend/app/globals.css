@@ -256,3 +256,32 @@ button { cursor: pointer; }
   .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
 }
+
+@keyframes nav-shine {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes nav-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsla(var(--color-accent-500) / 0); }
+  50% { box-shadow: 0 0 8px 2px hsla(var(--color-accent-500) / 0.35); }
+}
+
+.nav-shine-btn {
+  position: relative;
+  overflow: hidden;
+}
+.nav-shine-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, hsla(var(--color-accent-400) / 0.18) 45%, hsla(var(--color-accent-300) / 0.3) 50%, hsla(var(--color-accent-400) / 0.18) 55%, transparent 70%);
+  background-size: 200% 100%;
+  animation: nav-shine 2.5s ease-in-out infinite;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.nav-glow {
+  animation: nav-glow-pulse 2s ease-in-out infinite;
+}
