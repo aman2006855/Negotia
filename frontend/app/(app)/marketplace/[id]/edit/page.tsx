@@ -160,10 +160,11 @@ export default function EditListingPage() {
           <div>
             <label className="label">Thumbnail Image</label>
             <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
-              onUpload={(result: any) => {
-                const url = result?.info?.secure_url;
-                if (url) {
-                  setThumbnailUrl(url);
+              options={{ maxFiles: 1, resourceType: 'image' }}
+              onSuccess={(result: any) => {
+                const info = result?.info;
+                if (info?.secure_url) {
+                  setThumbnailUrl(info.secure_url);
                   showToast('Image uploaded');
                 }
               }}>

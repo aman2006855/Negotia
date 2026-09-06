@@ -128,7 +128,14 @@ export default function NewListingPage() {
           <div>
             <label className="label">Thumbnail Image</label>
             <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
-              onUpload={(result: any) => { setThumbnailUrl(result.info?.secure_url ?? ''); showToast('Image uploaded'); }}>
+              options={{ maxFiles: 1, resourceType: 'image' }}
+              onSuccess={(result: any) => {
+                const info = result?.info;
+                if (info?.secure_url) {
+                  setThumbnailUrl(info.secure_url);
+                  showToast('Image uploaded');
+                }
+              }}>
               {({ open }) => (
                 <button type="button" onClick={() => open()} className="w-full py-8 border-2 border-dashed border-border-subtle rounded-xl text-txt-tertiary text-sm hover:border-accent-300 transition-colors flex items-center justify-center gap-2">
                   <UploadIcon className="w-5 h-5" />
