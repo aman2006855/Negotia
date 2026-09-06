@@ -6,6 +6,8 @@ import { CldUploadWidget } from 'next-cloudinary';
 import { api } from '@/lib/api';
 import { useBoard } from '@/lib/store';
 import { ArrowLeftIcon, CameraIcon } from '@/components/icons';
+import { validateProfile, validateField } from '@/lib/validations/profile';
+import { sanitizeText, sanitizeUrl } from '@/lib/sanitize';
 import type { SocialLinks } from '@/lib/types';
 
 const DEFAULT_SOCIAL: SocialLinks = { instagram: '', twitter: '', github: '', whatsapp: '', linkedin: '' };
@@ -35,6 +37,7 @@ export default function EditProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [usernameError, setUsernameError] = useState('');
   const [usernameChecking, setUsernameChecking] = useState(false);
@@ -123,14 +126,28 @@ export default function EditProfilePage() {
 
   async function handleSave() {
     setError('');
-    if (!fullName.trim() || fullName.trim().length < 2) {
-      setError('Name must be at least 2 characters');
+    setFieldErrors({});
+
+    const result = validateProfile({
+      fullName,
+      username,
+      about,
+      avatar: avatarUrl,
+      coverPhotoUrl,
+      socialLinks,
+    });
+
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path.join('.');
+        if (!errors[path]) errors[path] = issue.message;
+      });
+      setFieldErrors(errors);
+      setError('Please fix the highlighted fields');
       return;
     }
-    if (!username || username.length < 3) {
-      setError('Username must be at least 3 characters');
-      return;
-    }
+
     if (usernameAvailable === false) {
       setError('Username is already taken');
       return;
@@ -138,18 +155,21 @@ export default function EditProfilePage() {
 
     setSaving(true);
     try {
-      const cleanedSocial: SocialLinks = {};
-      Object.entries(socialLinks).forEach(([k, v]) => {
-        if (v && v.trim()) cleanedSocial[k as keyof SocialLinks] = v.trim();
-      });
-
       const { user: updatedUser } = await api.updateProfile({
-        fullName: fullName.trim(),
-        username,
-        about: about.trim() || undefined,
-        avatar: avatarUrl || undefined,
-        coverPhotoUrl: coverPhotoUrl || undefined,
-        socialLinks: Object.keys(cleanedSocial).length > 0 ? cleanedSocial : undefined,
+        fullName: sanitizeText(result.data.fullName),
+        username: result.data.username,
+        about: result.data.about ? sanitizeText(result.data.about) : undefined,
+        avatar: result.data.avatar || undefined,
+        coverPhotoUrl: result.data.coverPhotoUrl || undefined,
+        socialLinks: result.data.socialLinks
+          ? {
+              instagram: result.data.socialLinks.instagram ? sanitizeUrl(result.data.socialLinks.instagram) : undefined,
+              twitter: result.data.socialLinks.twitter ? sanitizeUrl(result.data.socialLinks.twitter) : undefined,
+              github: result.data.socialLinks.github ? sanitizeUrl(result.data.socialLinks.github) : undefined,
+              whatsapp: result.data.socialLinks.whatsapp ? sanitizeUrl(result.data.socialLinks.whatsapp) : undefined,
+              linkedin: result.data.socialLinks.linkedin ? sanitizeUrl(result.data.socialLinks.linkedin) : undefined,
+            }
+          : undefined,
       } as any);
       if (updatedUser) setUser(updatedUser);
       showToast('Profile updated');
@@ -277,7 +297,9 @@ export default function EditProfilePage() {
           <label className="label">Full name</label>
           <input type="text" value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="input-field py-3" placeholder="e.g. Sarah Chen" />
+            className={`input-field py-3 ${fieldErrors.fullName ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''}`}
+            placeholder="e.g. Sarah Chen" />
+          {fieldErrors.fullName && <p className="mt-1.5 text-xs text-danger-600">{fieldErrors.fullName}</p>}
         </div>
 
         {/* Username */}
@@ -307,8 +329,10 @@ export default function EditProfilePage() {
           <label className="label">About <span className="text-txt-tertiary font-normal">(optional)</span></label>
           <textarea value={about}
             onChange={(e) => setAbout(e.target.value)}
-            className="input-field resize-none py-3" rows={4}
+            className={`input-field resize-none py-3 ${fieldErrors.about ? 'border-danger-500 focus:ring-danger-500/30 focus:border-danger-500' : ''}`}
+            rows={4}
             placeholder="Tell others about yourself, your expertise, and what you're looking for..." />
+          {fieldErrors.about && <p className="mt-1.5 text-xs text-danger-600">{fieldErrors.about}</p>}
           <p className="mt-1.5 text-xs text-txt-tertiary">{about.length}/500</p>
         </div>
       </div>
