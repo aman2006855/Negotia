@@ -434,13 +434,27 @@ export const api = {
   getDashboardStats: async (): Promise<DashboardStats> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
-    const { data } = await supabase.from('user_dashboard_stats').select('*').eq('user_id', session.user.id).maybeSingle();
-    const s = data as any;
+    const userId = session.user.id;
+    const { data: user } = await supabase.from('users').select('role, rating, review_count').eq('id', userId).single();
+    const role = (user as any)?.role ?? 'FREELANCER';
+    const { data: myJobs } = await supabase.from('jobs').select('status, budget_cents, currency').or(`client_id.eq.${userId},freelancer_id.eq.${userId}`);
+    const allJobs = myJobs ?? [];
+    const openJobs = allJobs.filter((j: any) => j.status === 'OPEN').length;
+    const negotiatingJobs = allJobs.filter((j: any) => j.status === 'NEGOTIATING').length;
+    const completedJobs = allJobs.filter((j: any) => j.status === 'COMPLETED').length;
+    const { data: myProjects } = await supabase.from('projects').select('status, budget_cents').or(`client_id.eq.${userId},freelancer_id.eq.${userId}`);
+    const allProjects = myProjects ?? [];
+    const activeProjects = allProjects.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'IN_REVIEW').length;
+    const completedProjects = allProjects.filter((p: any) => p.status === 'COMPLETED').length;
+    const totalSpent = allProjects.filter((p: any) => p.client_id === userId).reduce((sum: number, p: any) => sum + (p.budget_cents || 0), 0);
+    const totalEarned = allProjects.filter((p: any) => p.freelancer_id === userId).reduce((sum: number, p: any) => sum + (p.budget_cents || 0), 0);
     return {
-      totalEarningsCents: s?.total_earnings_cents ?? 0, pendingPaymentsCents: 0,
-      activeProjects: (s?.active_freelance_projects ?? 0) + (s?.ongoing_projects ?? 0),
-      completedProjects: s?.completed_jobs ?? 0,
-      averageRating: Number(s?.rating) || 0, reviewCount: s?.review_count ?? 0,
+      totalEarningsCents: role === 'CLIENT' ? totalSpent : totalEarned,
+      pendingPaymentsCents: negotiatingJobs * 0,
+      activeProjects: activeProjects || negotiatingJobs,
+      completedProjects: completedProjects || completedJobs,
+      averageRating: Number((user as any)?.rating) || 0,
+      reviewCount: (user as any)?.review_count ?? 0,
     };
   },
 
