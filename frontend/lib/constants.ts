@@ -1,16 +1,19 @@
 export const JOB_CATEGORIES = [
+  'Web & App Development (Full-Stack)',
   'API & Backend Development',
-  'Full-Stack Web Application',
   'Landing Page & Marketing Site',
-  'Mobile App Development',
+  'Mobile App Development (iOS/Android)',
   'Progressive Web App (PWA)',
   'Frontend UI/UX Implementation',
+  'Video Editing & Multimedia',
+  'Content Writing & Documentation',
+  'Data Entry & Processing',
   'Bug Fixing & Code Refactoring',
   'Scripting & Automation Tools',
   'Database Design & Migration',
   'E-Commerce & POS Solutions',
   'DevOps, Cloud & Deployment',
-  'Technical Writing & Documentation',
+  'Digital Marketing & SEO',
 ] as const;
 
 export type JobCategory = (typeof JOB_CATEGORIES)[number];
