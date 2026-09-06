@@ -55,6 +55,13 @@ export interface FeedJob {
   createdAt: string;
   clientId: string;
   clientName: string;
+  clientAvatar?: string;
+  clientRating?: number;
+  clientReviewCount?: number;
+  clientCreatedAt?: string;
+  clientEntityType?: string;
+  clientCompanyName?: string;
+  agreementText?: string;
   freelancerId?: string;
   freelancerName?: string;
 }

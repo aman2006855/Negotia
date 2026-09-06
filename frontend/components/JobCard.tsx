@@ -1,8 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { getSocket } from '@/lib/socket';
 import { useBoard } from '@/lib/store';
 import type { FeedJob } from '@/lib/types';
 import { LockIcon, ClockIcon, BellIcon } from './icons';
@@ -31,12 +29,9 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string; overlay?: st
 
 export function JobCard({ job }: { job: FeedJob }) {
   const router = useRouter();
-  const [locking, setLocking] = useState(false);
 
   const myActiveJobId = useBoard((s) => s.myActiveJobId);
   const myNegotiationId = useBoard((s) => s.myNegotiationId);
-  const acquireLock = useBoard((s) => s.acquireLock);
-  const patchJob = useBoard((s) => s.patchJob);
   const showToast = useBoard((s) => s.showToast);
   const watchedJobIds = useBoard((s) => s.watchedJobIds);
   const toggleWatch = useBoard((s) => s.toggleWatch);
@@ -46,7 +41,7 @@ export function JobCard({ job }: { job: FeedJob }) {
   const inProgress = job.status === 'IN_PROGRESS';
   const completed = job.status === 'COMPLETED';
   const blockedByMyOtherNegotiation = !!myActiveJobId && myActiveJobId !== job.id;
-  const clickable = ((job.status === 'OPEN' && !blockedByMyOtherNegotiation) || isMyNegotiation) && !locking;
+  const clickable = ((job.status === 'OPEN' && !blockedByMyOtherNegotiation) || isMyNegotiation);
   const isWatched = watchedJobIds.includes(job.id);
 
   const statusConfig = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.OPEN;
@@ -57,27 +52,9 @@ export function JobCard({ job }: { job: FeedJob }) {
       router.push('/negotiation');
       return;
     }
-    setLocking(true);
-    try {
-      const res = await getSocket().timeout(5000).emitWithAck('job:lock', { jobId: job.id });
-      if (res && res.ok) {
-        acquireLock(res.job.id, res.negotiation.id);
-        router.push('/negotiation');
-      } else {
-        const error = res?.error;
-        if (error === 'JOB_TAKEN' || error === 'NOT_OPEN') {
-          patchJob(job.id, { status: 'NEGOTIATING' });
-          showToast('Someone just took this job');
-        } else if (error === 'ALREADY_NEGOTIATING' && myNegotiationId) {
-          router.push('/negotiation');
-        } else {
-          showToast('Could not lock this job');
-        }
-      }
-    } catch {
-      showToast('Connection lost — try again');
-    } finally {
-      setLocking(false);
+    if (job.status === 'OPEN') {
+      router.push(`/jobs/${job.id}`);
+      return;
     }
   }
 

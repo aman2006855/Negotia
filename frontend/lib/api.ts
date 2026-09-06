@@ -127,6 +127,27 @@ export const api = {
     return (data ?? []).map(mapFeedJob);
   },
 
+  getJobById: async (jobId: string): Promise<FeedJob> => {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*, users!jobs_client_id_fkey(name, avatar_url, rating, review_count, created_at, entity_type, company_name)')
+      .eq('id', jobId)
+      .single();
+    if (error) throw error;
+    const j = data as any;
+    return {
+      ...mapFeedJob(j),
+      clientName: j.users?.name ?? 'Client',
+      clientAvatar: j.users?.avatar_url,
+      clientRating: j.users?.rating ?? 0,
+      clientReviewCount: j.users?.review_count ?? 0,
+      clientCreatedAt: j.users?.created_at,
+      clientEntityType: j.users?.entity_type,
+      clientCompanyName: j.users?.company_name,
+      agreementText: j.agreement_text,
+    } as FeedJob & { clientAvatar: string; clientRating: number; clientReviewCount: number; clientCreatedAt: string; clientEntityType: string; clientCompanyName: string; agreementText: string };
+  },
+
   myJobs: async (): Promise<FeedJob[]> => {
     const session = await getSession();
     if (!session) throw new Error('Not authenticated');
