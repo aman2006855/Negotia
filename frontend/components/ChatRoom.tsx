@@ -120,7 +120,7 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
 
   return (
     <>
-      <div className="flex flex-col" style={{ height: 'calc(100dvh - 64px)' }}>
+      <div className="flex flex-col" style={{ height: 'calc(100dvh - 48px - 64px)' }}>
         {/* Sticky Chat Header */}
         <div className="shrink-0 border-b border-border-subtle bg-surface px-4 py-2.5 z-10">
           <div className="mx-auto flex max-w-2xl items-center gap-3">
