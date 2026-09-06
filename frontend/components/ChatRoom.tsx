@@ -271,7 +271,7 @@ export function ChatRoom({ state: initialState }: { state: NegotiationState }) {
 
               <div className="flex items-center gap-2">
                 <CldUploadWidget
-                  uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                  uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'Negotia'}
                   onUpload={(result: any) => {
                     if (result.info?.secure_url) {
                       handleSendImage(result.info.secure_url);

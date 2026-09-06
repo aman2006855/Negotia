@@ -51,19 +51,10 @@ export default function WorkspaceDetailPage() {
 
   async function handleToggleMilestone(milestoneId: string) {
     if (!project) return;
-    await api.toggleMilestone(project.id, milestoneId);
-    setProject((prev) => {
-      if (!prev) return prev;
-      const milestones = prev.milestones.map((m) => {
-        if (m.id !== milestoneId) return m;
-        const states: Project['milestones'][0]['status'][] = ['TODO', 'IN_PROGRESS', 'DONE'];
-        const i = states.indexOf(m.status);
-        return { ...m, status: states[(i + 1) % states.length] };
-      });
-      const done = milestones.filter((m) => m.status === 'DONE').length;
-      const progress = milestones.length ? Math.round((done / milestones.length) * 100) : prev.progress;
-      return { ...prev, milestones, progress };
-    });
+    try {
+      const result = await api.toggleMilestone(project.id, milestoneId);
+      setProject(result.project);
+    } catch {}
   }
 
   async function handleAddMilestone() {

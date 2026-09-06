@@ -383,8 +383,13 @@ export const api = {
   toggleMilestone: async (projectId: string, milestoneId: string): Promise<{ project: Project }> => {
     const { data: m } = await supabase.from('milestones').select('status').eq('id', milestoneId).single();
     const next = (m as any)?.status === 'DONE' ? 'TODO' : 'DONE';
-    const { error } = await supabase.from('milestones').update({ status: next }).eq('id', milestoneId);
+    const { error } = await supabase.from('milestones').update({ status: next, updated_at: new Date().toISOString() }).eq('id', milestoneId);
     if (error) throw error;
+    const { data: allMs } = await supabase.from('milestones').select('status').eq('project_id', projectId);
+    const done = (allMs ?? []).filter((ms: any) => ms.status === 'DONE').length;
+    const total = (allMs ?? []).length;
+    const progress = total ? Math.round((done / total) * 100) : 0;
+    await supabase.from('projects').update({ progress }).eq('id', projectId);
     return api.getProject(projectId);
   },
 
